@@ -7,6 +7,7 @@ extern crate rustc_serialize;
 
 use std::fmt;
 use std::io::Read;
+use std::collections::HashSet;
 
 use hyper::client::{Client, Response, RequestBuilder};
 use hyper::header::{Accept, Connection, qitem};
@@ -63,15 +64,21 @@ impl MyClient {
 }
 
 fn main() {
+    let mut line_names : HashSet<String> = HashSet::new();
+    let mut route_section_names : HashSet<String> = HashSet::new();
     let mut client = MyClient::new();
     let mut resp = client.get("/line/route");
     let mut body = String::new();
     resp.read_to_string(&mut body).unwrap();
     let lines : Vec<Line> = json::decode(&body).unwrap();
     for line in lines {
-        println!("{}:", line.name);
+        let line_known = line_names.contains(&line.name);
+        println!("{}, Duplicate: {}:", line.name, line_known);
+        line_names.insert(line.name.clone());
         for routeSection in line.routeSections {
-            println!("\t{}", routeSection.name);
+            let route_section_known = route_section_names.contains(&routeSection.name);
+            println!("\t{}, Duplicate: {}", routeSection.name, route_section_known);
+            route_section_names.insert(routeSection.name.clone());
         }
     }
 }
