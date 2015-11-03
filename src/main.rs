@@ -33,7 +33,16 @@ struct Line {
     id : String,
     name : String,
     modeName : String,
-    routeSections : Vec<RouteSection>
+    routeSections : Vec<RouteSection>,
+    stops : Option<Vec<Stop>>,
+}
+
+#[derive(Clone, Debug, RustcDecodable)]
+struct Stop {
+    naptanId : String,
+    commonName : String,
+    lat : f64,
+    lon : f64,
 }
 
 #[derive(Clone, Debug, RustcDecodable)]
@@ -159,6 +168,18 @@ fn get_timetable(client : &MyClient, line_id : &str, originator: &str, destinati
     }
 }
 
+fn get_stops(client : &MyClient, line_id : &str) -> Vec<Stop> {
+    let req_uri = format!("/line/{}/stoppoints", line_id);
+    let body = client.get(&req_uri);
+    match json::decode::<Vec<Stop>>(&body) {
+        Ok(stops) => stops,
+        Err(err) => {
+            println!("Error decoding stops: {}", err);
+            Vec::<Stop>::new()
+        }
+    }
+}
+
 fn route_section_id(line : &Line, section : &RouteSection) -> String {
     return line.id.clone() + " " + &section.originator + " to " + &section.destination;
 }
@@ -195,18 +216,30 @@ fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
     let fname = format!("{}/{}", gtfs_path, "/routes.txt");
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
-    let records = vec![
-        ("agency_id","agency_name","agency_url","agency_timezone"),
-        ("tfl","Transport For London","https://tfl.gov.uk","Europe/London")
-    ];
     wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type"));
-
     for line in lines.into_iter() {
         wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line)));
     }
 }
 
 fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
+    let fname = format!("{}/{}", gtfs_path, "/stops.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let mut written_stops = HashSet::<String>::new();
+    wtr.encode(("stop_id", "stop_name", "stop_lat", "stop_lon"));
+    for line in lines {
+        let stops = line.stops.as_ref().unwrap();
+        for stop in stops {
+            match written_stops.contains(&stop.naptanId) {
+                true => (),
+                false => {
+                    wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon));
+                    written_stops.insert(stop.naptanId.clone());
+                },
+            };
+        }
+    }
 }
 
 fn write_calendar(gtfs_path : &str) {
@@ -240,6 +273,7 @@ fn main() {
         for line in &mut lines {
             let client = client.clone();
             scope.execute(move || {
+                line.stops = Some(get_stops(&client, &line.id));
                 for route_section in &mut line.routeSections {
                     println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
                     route_section.timetable = get_timetable(&client, &line.id, &route_section.originator, &route_section.destination);
