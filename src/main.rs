@@ -19,6 +19,7 @@ struct MyClient {
     client : Client,
     app_id : String,
     app_key : String,
+    cache_dir : String,
 }
 
 #[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
@@ -81,13 +82,13 @@ struct TimeTableResponse {
 
 impl MyClient {
     fn new() -> MyClient {
-        let cachePath : Path = Path::new("./cache");
-        fs::create_dir(cachePath).unwrap();
+        let cachePath : &Path = Path::new("./cache");
+        fs::create_dir(cachePath);
         return MyClient{
             client : Client::new(),
             app_id : String::new(),
             app_key : String::new(),
-            cache_dir : String::from_str("./cache"),
+            cache_dir : String::from("./cache"),
         }
     }
 
@@ -102,7 +103,6 @@ impl MyClient {
         let req_uri = format!("https://api.tfl.gov.uk{}?app_id={}&app_key={}", endpoint, self.app_id, self.app_key);
         let mut body = String::new();
         let mut resp = self.client.get(&req_uri)
-            .header(Connection::close())
             .header(Accept(vec![
                 qitem(Mime(TopLevel::Application,
                     SubLevel::Ext("json".to_owned()), vec![])),
@@ -113,20 +113,21 @@ impl MyClient {
     }
 
     fn cache_fname(&mut self, endpoint : &str) -> String {
-        let fname = String::from_str(endpoint);
-        self.cache_dir + "/".to_string() + fname.replace("/", "_")
+        let fname = String::from(endpoint);
+        let fname0 = fname.replace("/", "_");
+        self.cache_dir.clone() + "/" + &fname0
     }
 
     fn cache_put(&mut self, endpoint : &str, body : String) -> String {
-        let mut f = try!(File::create(self.cache_fname(endpoint)));
-        f.write_string(body);
+        let mut f = File::create(self.cache_fname(endpoint)).unwrap();
+        f.write_all(body.as_bytes());
         body
     }
 
     fn cache_get(&mut self, endpoint : &str) -> Option<String> {
         let mut body = String::new();
         match File::open(self.cache_fname(endpoint)) {
-            Ok(f) => {
+            Ok(ref mut f) => {
                 f.read_to_string(&mut body);
                 Some(body)
             },
