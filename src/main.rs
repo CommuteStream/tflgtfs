@@ -217,7 +217,7 @@ fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
     wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type"));
-    for line in lines.into_iter() {
+    for line in lines {
         wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line)));
     }
 }
@@ -245,7 +245,44 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
 fn write_calendar(gtfs_path : &str) {
 }
 
+fn trip_id(line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney) -> String {
+    return line.id.clone() + " " + &section.originator + " to " + &section.destination + " scheduled " + &schedule.name + " departing " + &journey.hour + ":" + &journey.minute;
+}
+
+fn write_route_section_trips(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
+    match section.timetable.as_ref() {
+        None => (),
+        Some(timetable) => {
+            for schedule in &timetable.schedules {
+                for journey in &schedule.knownJourneys {
+                    wtr.encode((&line.id, &schedule.name, trip_id(line, section, schedule, journey)));
+                }
+            }
+        },
+    }
+}
+
 fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
+    let fname = format!("{}/{}", gtfs_path, "/trips.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let mut written_stops = HashSet::<String>::new();
+    wtr.encode(("route_id", "service_id", "trip_id"));
+    for line in lines {
+        let mut written_route_sections = HashSet::<String>::new();
+        let route_sections = &line.routeSections;
+        for route_section in route_sections {
+            let id = route_section_id(line, route_section);
+            match written_route_sections.contains(&id) {
+                true => (),
+                false => {
+                    write_route_section_trips(&mut wtr, line, route_section);
+                    written_route_sections.insert(id);
+                },
+            };
+        }
+    }
+
 }
 
 fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
