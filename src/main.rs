@@ -3,6 +3,7 @@
 extern crate hyper;
 extern crate rustc_serialize;
 extern crate scoped_threadpool;
+extern crate csv;
 
 use std::fs;
 use std::sync::Arc;
@@ -80,7 +81,7 @@ struct RoutesTimeTables {
     routes : Vec<TimeTable>,
 }
 
-#[derive(Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Debug, RustcDecodable)]
 struct TimeTableResponse {
     timetable : RoutesTimeTables,
 }
@@ -162,9 +163,44 @@ fn route_section_id(line : &Line, section : &RouteSection) -> String {
     return line.id.clone() + " " + &section.originator + " to " + &section.destination;
 }
 
-fn write_gtfs(line : &Vec<Line>) {
-        let gtfsPath : &Path = Path::new("./gtfs");
-        fs::create_dir(gtfsPath);
+fn write_agency(gtfs_path : &str) {
+    let fname = format!("{}/{}", gtfs_path, "/agency.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let records = vec![
+        ("agency_id","agency_name","agency_url","agency_timezone"),
+        ("tfl","Transport For London","https://tfl.gov.uk","Europe/London")
+    ];
+    for record in records {
+        wtr.encode(record);
+    }
+}
+
+fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
+}
+
+fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
+}
+
+fn write_calendar(gtfs_path : &str) {
+}
+
+fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
+}
+
+fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
+}
+
+fn write_gtfs(lines : &Vec<Line>) {
+        let gtfs_path : &Path = Path::new("./gtfs");
+        let gtfs_path_str = gtfs_path.to_str().unwrap();
+        fs::create_dir(gtfs_path_str);
+        write_agency(gtfs_path_str);
+        write_routes(gtfs_path_str, lines);
+        write_stops(gtfs_path_str, lines);
+        write_calendar(gtfs_path_str);
+        write_trips(gtfs_path_str, lines);
+        write_stop_times(gtfs_path_str, lines);
 }
 
 fn main() {
