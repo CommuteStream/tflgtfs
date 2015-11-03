@@ -2,6 +2,7 @@
 
 extern crate hyper;
 extern crate rustc_serialize;
+extern crate scoped_threadpool;
 
 use std::fs;
 use std::path::Path;
@@ -14,6 +15,8 @@ use hyper::header::{Accept, Connection, qitem};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 
 use rustc_serialize::json;
+
+use scoped_threadpool::Pool;
 
 struct MyClient {
     client : Client,
@@ -150,20 +153,41 @@ fn get_timetable(client : &mut MyClient, line_id : &str, originator: &str, desti
     }
 }
 
+fn route_section_id(line : &Line, section : &RouteSection) -> String {
+    return line.id.clone() + " " + &section.originator + " to " + &section.destination;
+}
+
 fn main() {
-    let mut line_names : HashSet<String> = HashSet::new();
-    let mut route_section_names : HashSet<String> = HashSet::new();
+    // Fetch data
     let mut client = MyClient::new();
     let mut lines = get_lines(&mut client);
-    for line in &mut lines {
-        let line_known = line_names.contains(&line.name);
-        println!("{}, Duplicate: {}:", line.name, line_known);
-        line_names.insert(line.name.clone());
-        for routeSection in &mut line.routeSections {
-            let route_section_known = route_section_names.contains(&routeSection.name);
-            println!("\t{}, Duplicate: {}", routeSection.name, route_section_known);
-            route_section_names.insert(routeSection.name.clone());
-            routeSection.timetable = get_timetable(&mut client, &line.id, &routeSection.originator, &routeSection.destination);
+    let mut pool = Pool::new(10);
+
+    pool.scoped(|scope| {
+        for line in &mut lines {
+            scope.execute(move || {
+                let mut client = MyClient::new();
+                for route_section in &mut line.routeSections {
+                    println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
+                    route_section.timetable = get_timetable(&mut client, &line.id, &route_section.originator, &route_section.destination);
+                }
+            });
         }
+    });
+
+    // Generate a report
+    let mut line_ids : HashSet<String> = HashSet::new();
+    let mut route_section_ids: HashSet<String> = HashSet::new();
+    for line in &lines {
+        println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
+        for route_section in &line.routeSections {
+            let id = route_section_id(&line, &route_section);
+            println!("\t{}, Duplicate: {}", id, route_section_ids.contains(&id));
+            route_section_ids.insert(id.clone());
+        }
+        line_ids.insert(line.id.clone());
     }
+
+    // Generate CSV files from fetched data
+
 }
