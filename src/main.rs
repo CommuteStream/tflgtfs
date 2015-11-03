@@ -5,6 +5,7 @@ extern crate rustc_serialize;
 extern crate scoped_threadpool;
 
 use std::fs;
+use std::sync::Arc;
 use std::path::Path;
 use std::fs::File;
 use std::io::{Read, Write};
@@ -18,14 +19,15 @@ use rustc_serialize::json;
 
 use scoped_threadpool::Pool;
 
+#[derive(Clone)]
 struct MyClient {
-    client : Client,
+    client : Arc<Client>,
     app_id : String,
     app_key : String,
     cache_dir : String,
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct Line {
     id : String,
     name : String,
@@ -33,7 +35,7 @@ struct Line {
     routeSections : Vec<RouteSection>
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct RouteSection {
     name : String,
     direction : String,
@@ -42,38 +44,38 @@ struct RouteSection {
     timetable : Option<TimeTable>,
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct Interval {
     stopId : String, 
     timeToArrival: f64,
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct StationInterval {
     id : i64,
     intervals : Vec<Interval>
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct KnownJourney {
     intervalId : i64,
     hour : String,
     minute : String,
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct Schedule {
     name : String,
     knownJourneys : Vec<KnownJourney>,
 }
 
-#[derive(Clone, Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct TimeTable {
     stationIntervals : Vec<StationInterval>,
     schedules : Vec<Schedule>,
 }
 
-#[derive(Debug, RustcEncodeable, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 struct RoutesTimeTables {
     routes : Vec<TimeTable>,
 }
@@ -88,21 +90,21 @@ impl MyClient {
         let cachePath : &Path = Path::new("./cache");
         fs::create_dir(cachePath);
         return MyClient{
-            client : Client::new(),
+            client : Arc::new(Client::new()),
             app_id : String::new(),
             app_key : String::new(),
             cache_dir : String::from("./cache"),
         }
     }
 
-    fn get(&mut self, endpoint : &str) -> String {
+    fn get(&self, endpoint : &str) -> String {
         match self.cache_get(endpoint) {
             Some(body) => body,
             None => self.remote_get(endpoint)
         }
     }
 
-    fn remote_get(&mut self, endpoint : &str) -> String {
+    fn remote_get(&self, endpoint : &str) -> String {
         let req_uri = format!("https://api.tfl.gov.uk{}?app_id={}&app_key={}", endpoint, self.app_id, self.app_key);
         let mut body = String::new();
         let mut resp = self.client.get(&req_uri)
@@ -115,19 +117,19 @@ impl MyClient {
         self.cache_put(endpoint, body)
     }
 
-    fn cache_fname(&mut self, endpoint : &str) -> String {
+    fn cache_fname(&self, endpoint : &str) -> String {
         let fname = String::from(endpoint);
         let fname0 = fname.replace("/", "_");
         self.cache_dir.clone() + "/" + &fname0
     }
 
-    fn cache_put(&mut self, endpoint : &str, body : String) -> String {
+    fn cache_put(&self, endpoint : &str, body : String) -> String {
         let mut f = File::create(self.cache_fname(endpoint)).unwrap();
         f.write_all(body.as_bytes());
         body
     }
 
-    fn cache_get(&mut self, endpoint : &str) -> Option<String> {
+    fn cache_get(&self, endpoint : &str) -> Option<String> {
         let mut body = String::new();
         match File::open(self.cache_fname(endpoint)) {
             Ok(ref mut f) => {
@@ -139,17 +141,20 @@ impl MyClient {
     }
 }
 
-fn get_lines(client : &mut MyClient) -> Vec<Line> {
+fn get_lines(client : &MyClient) -> Vec<Line> {
     let body = client.get("/line/route");
     json::decode(&body).unwrap()
 }
 
-fn get_timetable(client : &mut MyClient, line_id : &str, originator: &str, destination : &str) -> Option<TimeTable> {
+fn get_timetable(client : &MyClient, line_id : &str, originator: &str, destination : &str) -> Option<TimeTable> {
     let req_uri = format!("/line/{}/timetable/{}/to/{}", line_id, originator, destination);
     let body = client.get(&req_uri);
     match json::decode::<TimeTableResponse>(&body) {
-        Ok(ttresp) => Some(ttresp.timetable.routes[0].clone()),
-        Err(_) => None,
+        Ok(ttresp) =>  Some(ttresp.timetable.routes[0].clone()),
+        Err(err) => {
+            println!("Error decoding timetable {}", err);
+            None
+        },
     }
 }
 
@@ -157,37 +162,62 @@ fn route_section_id(line : &Line, section : &RouteSection) -> String {
     return line.id.clone() + " " + &section.originator + " to " + &section.destination;
 }
 
+fn write_gtfs(line : &Vec<Line>) {
+        let gtfsPath : &Path = Path::new("./gtfs");
+        fs::create_dir(gtfsPath);
+}
+
 fn main() {
     // Fetch data
-    let mut client = MyClient::new();
-    let mut lines = get_lines(&mut client);
+    let client = Arc::new(MyClient::new());
+    let mut lines = get_lines(&client);
     let mut pool = Pool::new(10);
 
     pool.scoped(|scope| {
         for line in &mut lines {
+            let client = client.clone();
             scope.execute(move || {
-                let mut client = MyClient::new();
                 for route_section in &mut line.routeSections {
                     println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
-                    route_section.timetable = get_timetable(&mut client, &line.id, &route_section.originator, &route_section.destination);
+                    route_section.timetable = get_timetable(&client, &line.id, &route_section.originator, &route_section.destination);
                 }
             });
         }
     });
 
     // Generate a report
+    let mut line_count = 0;
     let mut line_ids : HashSet<String> = HashSet::new();
+    let mut route_section_count = 0;
     let mut route_section_ids: HashSet<String> = HashSet::new();
+    let mut schedule_names: HashSet<String> = HashSet::new();
     for line in &lines {
         println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
         for route_section in &line.routeSections {
+            let has_timetable = match route_section.timetable {
+                Some(ref timetable) => {
+                    for schedule in &timetable.schedules {
+                        schedule_names.insert(schedule.name.clone());
+                    }
+                    true
+                },
+                None => false,
+            };
             let id = route_section_id(&line, &route_section);
-            println!("\t{}, Duplicate: {}", id, route_section_ids.contains(&id));
+            println!("\t{}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
             route_section_ids.insert(id.clone());
+            route_section_count += 1;
         }
+        line_count += 1;
         line_ids.insert(line.id.clone());
+    }
+    println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count-line_ids.len(), route_section_count-route_section_ids.len());
+
+    println!("Schedule Names:");
+    for schedule_name in &schedule_names {
+        println!("\t{}", schedule_name);
     }
 
     // Generate CSV files from fetched data
-
+    write_gtfs(&lines);
 }
