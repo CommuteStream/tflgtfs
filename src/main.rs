@@ -176,7 +176,34 @@ fn write_agency(gtfs_path : &str) {
     }
 }
 
+fn route_type(line : &Line) -> &'static str {
+    match &line.modeName[..] {
+        "dlr" | "tram" => "0",
+        "tube" | "overground" => "1",
+        "national-rail" | "tflrail" => "2",
+        "bus" => "3",
+        "river-tour" | "river-bus" => "4",
+        "cable-car" => "5",
+        _ => {
+            println!("Missing line modeName match: {}", line.modeName);
+            ""
+        },
+    }
+}
+
 fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
+    let fname = format!("{}/{}", gtfs_path, "/routes.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let records = vec![
+        ("agency_id","agency_name","agency_url","agency_timezone"),
+        ("tfl","Transport For London","https://tfl.gov.uk","Europe/London")
+    ];
+    wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type"));
+
+    for line in lines.into_iter() {
+        wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line)));
+    }
 }
 
 fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
