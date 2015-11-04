@@ -243,6 +243,50 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
 }
 
 fn write_calendar(gtfs_path : &str) {
+    let fname = format!("{}/{}", gtfs_path, "/calendar.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let start_date = "20151031";
+    let end_date = "20161031";
+    let records = vec![
+        ("service_id", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday", "start_date", "end_date"),
+        ("School Monday", "1", "0", "0", "0", "0", "0", "0", &start_date, &end_date),
+        ("Sunday Night/Monday Morning", "1", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
+        ("School Monday, Tuesday, Thursday & Friday", "1", "1", "0", "1", "1", "0", "0", &start_date, &end_date),
+        ("Tuesday", "0", "1", "0", "0", "0", "0", "0", &start_date, &end_date),
+        ("Monday - Thursday", "1", "1", "1", "1", "0", "0", "0", &start_date, &end_date),
+        ("Saturday", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
+        ("Saturday and Sunday", "0", "0", "0", "0", "0", "1","1", &start_date, &end_date),
+        ("Sunday", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
+        ("School Tuesday", "0", "1", "0", "0", "0", "0", "0", &start_date, &end_date),
+        ("Saturday Night/Sunday Morning", "0", "0", "0", "0", "0", "1", "1", &start_date, &end_date),
+        ("Mo-Fr Night/Tu-Sat Morning", "1", "1", "1", "1","1", "1", "0", &start_date, &end_date),
+        ("Monday to Thursday", "1", "1", "1", "1", "0", "0", "0", &start_date, &end_date),
+        ("Mo-Th Nights/Tu-Fr Morning", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
+        ("Saturday (also Good Friday)", "0", "0", "0", "0", "0", "1", "0", &start_date, &end_date),
+        ("Mon-Th Schooldays", "1", "1", "1", "1", "0", "0", "0", &start_date, &end_date),
+        ("Saturdays and Public Holidays", "0", "0", "0", "0", "0", "1", "0", &start_date, &end_date),
+        ("Friday Night/Saturday Morning", "0", "0", "0", "0", "1", "1", "0", &start_date, &end_date),
+        ("Friday", "0", "0", "0", "0", "1", "0", "0", &start_date, &end_date),
+        ("Thursdays", "0", "0", "0", "1", "0", "0", "0", &start_date, &end_date),
+        ("Sunday night/Monday morning - Thursday night/Friday morning", "1", "1", "1", "1", "1", "0", "1", &start_date, &end_date),
+        ("School Thursday", "0", "0", "0", "1", "0", "0", "0", &start_date, &end_date),
+        ("School Friday", "0", "0", "0", "0", "1", "0", "0", &start_date, &end_date),
+        ("Daily", "1", "1", "1", "1", "1", "1", "1", &start_date, &end_date),
+        ("Tuesday, Wednesday & Thursday", "0", "1", "1", "1", "0", "0", "0", &start_date, &end_date),
+        ("Mon-Fri Schooldays", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
+        ("Wednesday", "0", "0", "1", "0", "0", "0", "0", &start_date, &end_date),
+        ("Monday, Tuesday and Thursday", "1", "1", "0", "1", "0", "0", "0", &start_date, &end_date),
+        ("Wednesdays", "0", "0", "1", "0", "0", "0", "0", &start_date, &end_date),
+        ("Monday to Friday", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
+        ("Monday", "1", "0", "0", "0", "0", "0", "0", &start_date, &end_date),
+        ("Sunday and other Public Holidays", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
+        ("School Wednesday", "0", "0", "1", "0", "0", "0", "0", &start_date, &end_date),
+        ("Monday - Friday", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
+    ];
+    for record in records {
+        wtr.encode(record);
+    }
 }
 
 fn trip_id(line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney) -> String {
