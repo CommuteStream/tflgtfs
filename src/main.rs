@@ -282,10 +282,52 @@ fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
             };
         }
     }
+}
+
+fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney, interval : &StationInterval) {
+}
+
+fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
+    match section.timetable.as_ref() {
+        None => (),
+        Some(timetable) => {
+            let mut intervals : HashMap<i64, &StationInterval> = HashMap::new();
+            for interval in &timetable.stationIntervals {
+                intervals.insert(interval.id, interval);
+            }
+            for schedule in &timetable.schedules {
+                for journey in &schedule.knownJourneys {
+                    match intervals.get(&journey.intervalId) {
+                        Some(interval) => write_journey_stop_times(wtr, line, section, schedule, journey, interval),
+                        None => println!("Error, Could not find interval for schedule!!!!"),
+                    };
+                }
+            };
+        },
+    }
 
 }
 
 fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
+    let fname = format!("{}/{}", gtfs_path, "/stop_times.txt");
+    let fpath = Path::new(&fname);
+    let mut wtr = csv::Writer::from_file(fpath).unwrap();
+    let mut written_stops = HashSet::<String>::new();
+    wtr.encode(("trip_id", "stop_id", "stop_sequence", "arrival_time", "departure_time"));
+    for line in lines {
+        let mut written_route_sections = HashSet::<String>::new();
+        let route_sections = &line.routeSections;
+        for route_section in route_sections {
+            let id = route_section_id(line, route_section);
+            match written_route_sections.contains(&id) {
+                true => (),
+                false => {
+                    write_route_section_stop_times(&mut wtr, line, route_section);
+                    written_route_sections.insert(id);
+                },
+            };
+        }
+    }
 }
 
 fn write_gtfs(lines : &Vec<Line>) {
