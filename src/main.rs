@@ -290,16 +290,25 @@ fn write_calendar(gtfs_path : &str) {
 }
 
 fn trip_id(line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney) -> String {
-    return line.id.clone() + " " + &section.originator + " to " + &section.destination + " scheduled " + &schedule.name + " departing " + &journey.hour + ":" + &journey.minute;
+    let tfmt = time_offset_fmt(journey, 0.0);
+    format!("{} {} to {} scheduled {} departs {}", line.id, section.originator, section.destination, schedule.name, tfmt)
 }
 
 fn write_route_section_trips(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
+    let mut written_trips : HashSet<String> = HashSet::new();
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
             for schedule in &timetable.schedules {
                 for journey in &schedule.knownJourneys {
-                    wtr.encode((&line.id, &schedule.name, trip_id(line, section, schedule, journey)));
+                    let id = trip_id(line, section, schedule, journey);
+                    match written_trips.contains(&id) {
+                        true => (),
+                        false => {
+                            written_trips.insert(id.clone());
+                            wtr.encode((&line.id, &schedule.name, trip_id(line, section, schedule, journey)));
+                        },
+                    }
                 }
             }
         },
@@ -350,6 +359,7 @@ fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section 
 }
 
 fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
+    let mut written_trips : HashSet<String> = HashSet::new();
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
@@ -360,7 +370,16 @@ fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, se
             for schedule in &timetable.schedules {
                 for journey in &schedule.knownJourneys {
                     match intervals.get(&journey.intervalId) {
-                        Some(interval) => write_journey_stop_times(wtr, line, section, schedule, journey, interval),
+                        Some(interval) =>  {
+                            let id = trip_id(line, section, schedule, journey);
+                            match written_trips.contains(&id) {
+                                true => (),
+                                false => {
+                                    written_trips.insert(id.clone());
+                                    write_journey_stop_times(wtr, line, section, schedule, journey, interval);
+                                }
+                            }
+                        },
                         None => println!("Error, Could not find interval for schedule!!!!"),
                     };
                 }
