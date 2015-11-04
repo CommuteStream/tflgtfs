@@ -283,18 +283,25 @@ fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
         }
     }
 }
-
 fn time_offset_fmt(journey : &KnownJourney, offset : f64) -> String {
-    String::new()
+    let dep_hour : u64 = journey.hour.parse().unwrap();
+    let dep_minute : u64 = journey.minute.parse().unwrap();
+    let rounded_offset : u64 = offset.floor() as u64;
+    let minute_offset : u64 = dep_minute + rounded_offset;
+    let hour : u64 = dep_hour + minute_offset / 60;
+    let minute : u64 = minute_offset % 60;
+    format!("{:02}:{:02}", hour, minute) 
 }
 
 fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney, interval : &StationInterval) {
     let mut stop_seq = 1;
     let trip_id = trip_id(line, section, schedule, journey);
-    wtr.encode((&trip_id, &section.originator, stop_seq, time_offset_fmt(journey, 0.0)));
+    let dep_time = time_offset_fmt(journey, 0.0);
+    wtr.encode((&trip_id, &section.originator, stop_seq, &dep_time, &dep_time));
     for stop in &interval.intervals {
         stop_seq += 1;
-        wtr.encode((&trip_id, &stop.stopId, stop_seq, time_offset_fmt(journey, stop.timeToArrival)));
+        let dep_time = time_offset_fmt(journey, stop.timeToArrival);
+        wtr.encode((&trip_id, &stop.stopId, stop_seq, &dep_time, &dep_time));
     }
 }
 
