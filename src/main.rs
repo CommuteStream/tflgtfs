@@ -238,7 +238,7 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
                     wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon));
                     written_stops.insert(stop.naptanId.clone());
                     for child in &stop.children {
-                        match written_stops.contains(&stop.naptanId) {
+                        match written_stops.contains(&child.naptanId) {
                             true => (),
                             false => {
                                 wtr.encode((child.naptanId.clone(), child.commonName.clone(), stop.lat, stop.lon));
