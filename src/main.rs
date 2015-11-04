@@ -43,6 +43,7 @@ struct Stop {
     commonName : String,
     lat : f64,
     lon : f64,
+    children : Vec<Stop>,
 }
 
 #[derive(Clone, Debug, RustcDecodable)]
@@ -236,6 +237,15 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
                 false => {
                     wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon));
                     written_stops.insert(stop.naptanId.clone());
+                    for child in &stop.children {
+                        match written_stops.contains(&stop.naptanId) {
+                            true => (),
+                            false => {
+                                wtr.encode((child.naptanId.clone(), child.commonName.clone(), stop.lat, stop.lon));
+                                written_stops.insert(child.naptanId.clone());
+                            },
+                        }
+                    }
                 },
             };
         }
