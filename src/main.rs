@@ -284,7 +284,18 @@ fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
     }
 }
 
+fn time_offset_fmt(journey : &KnownJourney, offset : f64) -> String {
+    String::new()
+}
+
 fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney, interval : &StationInterval) {
+    let mut stop_seq = 1;
+    let trip_id = trip_id(line, section, schedule, journey);
+    wtr.encode((&trip_id, &section.originator, stop_seq, time_offset_fmt(journey, 0.0)));
+    for stop in &interval.intervals {
+        stop_seq += 1;
+        wtr.encode((&trip_id, &stop.stopId, stop_seq, time_offset_fmt(journey, stop.timeToArrival)));
+    }
 }
 
 fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
