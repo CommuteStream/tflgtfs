@@ -12,8 +12,8 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::collections::{HashSet, HashMap};
 
-use hyper::client::{Client, Response, RequestBuilder};
-use hyper::header::{Accept, Connection, qitem};
+use hyper::client::Client;
+use hyper::header::{Accept, qitem};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 
 use rustc_serialize::json;
@@ -98,8 +98,8 @@ struct TimeTableResponse {
 
 impl MyClient {
     fn new() -> MyClient {
-        let cachePath : &Path = Path::new("./cache");
-        fs::create_dir(cachePath);
+        let cache_path : &Path = Path::new("./cache");
+        fs::create_dir(cache_path).unwrap();
         return MyClient{
             client : Arc::new(Client::new()),
             app_id : String::new(),
@@ -136,7 +136,7 @@ impl MyClient {
 
     fn cache_put(&self, endpoint : &str, body : String) -> String {
         let mut f = File::create(self.cache_fname(endpoint)).unwrap();
-        f.write_all(body.as_bytes());
+        f.write_all(body.as_bytes()).unwrap();
         body
     }
 
@@ -144,7 +144,7 @@ impl MyClient {
         let mut body = String::new();
         match File::open(self.cache_fname(endpoint)) {
             Ok(ref mut f) => {
-                f.read_to_string(&mut body);
+                f.read_to_string(&mut body).unwrap();
                 Some(body)
             },
             Err(_) => None,
@@ -194,7 +194,7 @@ fn write_agency(gtfs_path : &str) {
         ("tfl","Transport For London","https://tfl.gov.uk","Europe/London")
     ];
     for record in records {
-        wtr.encode(record);
+        wtr.encode(record).unwrap();
     }
 }
 
@@ -217,9 +217,9 @@ fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
     let fname = format!("{}/{}", gtfs_path, "/routes.txt");
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
-    wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type"));
+    wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type")).unwrap();
     for line in lines {
-        wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line)));
+        wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line))).unwrap();
     }
 }
 
@@ -228,20 +228,20 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
     let mut written_stops = HashSet::<String>::new();
-    wtr.encode(("stop_id", "stop_name", "stop_lat", "stop_lon"));
+    wtr.encode(("stop_id", "stop_name", "stop_lat", "stop_lon")).unwrap();
     for line in lines {
         let stops = line.stops.as_ref().unwrap();
         for stop in stops {
             match written_stops.contains(&stop.naptanId) {
                 true => (),
                 false => {
-                    wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon));
+                    wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon)).unwrap();
                     written_stops.insert(stop.naptanId.clone());
                     for child in &stop.children {
                         match written_stops.contains(&child.naptanId) {
                             true => (),
                             false => {
-                                wtr.encode((child.naptanId.clone(), child.commonName.clone(), stop.lat, stop.lon));
+                                wtr.encode((child.naptanId.clone(), child.commonName.clone(), stop.lat, stop.lon)).unwrap();
                                 written_stops.insert(child.naptanId.clone());
                             },
                         }
@@ -295,7 +295,7 @@ fn write_calendar(gtfs_path : &str) {
         ("Monday - Friday", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
     ];
     for record in records {
-        wtr.encode(record);
+        wtr.encode(record).unwrap();
     }
 }
 
@@ -316,7 +316,7 @@ fn write_route_section_trips(wtr : &mut csv::Writer<File>, line : &Line, section
                         true => (),
                         false => {
                             written_trips.insert(id.clone());
-                            wtr.encode((&line.id, &schedule.name, trip_id(line, section, schedule, journey)));
+                            wtr.encode((&line.id, &schedule.name, trip_id(line, section, schedule, journey))).unwrap();
                         },
                     }
                 }
@@ -329,8 +329,7 @@ fn write_trips(gtfs_path : &str, lines : &Vec<Line>) {
     let fname = format!("{}/{}", gtfs_path, "/trips.txt");
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
-    let mut written_stops = HashSet::<String>::new();
-    wtr.encode(("route_id", "service_id", "trip_id"));
+    wtr.encode(("route_id", "service_id", "trip_id")).unwrap();
     for line in lines {
         let mut written_route_sections = HashSet::<String>::new();
         let route_sections = &line.routeSections;
@@ -360,11 +359,11 @@ fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section 
     let mut stop_seq = 1;
     let trip_id = trip_id(line, section, schedule, journey);
     let dep_time = time_offset_fmt(journey, 0.0);
-    wtr.encode((&trip_id, &section.originator, stop_seq, &dep_time, &dep_time));
+    wtr.encode((&trip_id, &section.originator, stop_seq, &dep_time, &dep_time)).unwrap();
     for stop in &interval.intervals {
         stop_seq += 1;
         let dep_time = time_offset_fmt(journey, stop.timeToArrival);
-        wtr.encode((&trip_id, &stop.stopId, stop_seq, &dep_time, &dep_time));
+        wtr.encode((&trip_id, &stop.stopId, stop_seq, &dep_time, &dep_time)).unwrap();
     }
 }
 
@@ -403,8 +402,7 @@ fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
     let fname = format!("{}/{}", gtfs_path, "/stop_times.txt");
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
-    let mut written_stops = HashSet::<String>::new();
-    wtr.encode(("trip_id", "stop_id", "stop_sequence", "arrival_time", "departure_time"));
+    wtr.encode(("trip_id", "stop_id", "stop_sequence", "arrival_time", "departure_time")).unwrap();
     for line in lines {
         let mut written_route_sections = HashSet::<String>::new();
         let route_sections = &line.routeSections;
@@ -424,7 +422,7 @@ fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
 fn write_gtfs(lines : &Vec<Line>) {
         let gtfs_path : &Path = Path::new("./gtfs");
         let gtfs_path_str = gtfs_path.to_str().unwrap();
-        fs::create_dir(gtfs_path_str);
+        fs::create_dir(gtfs_path_str).unwrap();
         write_agency(gtfs_path_str);
         write_routes(gtfs_path_str, lines);
         write_stops(gtfs_path_str, lines);
