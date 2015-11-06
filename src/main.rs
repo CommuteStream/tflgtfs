@@ -52,7 +52,7 @@ struct RouteSection {
     direction : String,
     originator : String,
     destination : String,
-    timetable : Option<TimeTable>,
+    timetable : Option<TimeTableResponse>,
 }
 
 #[derive(Clone, Debug, RustcDecodable)]
@@ -91,15 +91,34 @@ struct RoutesTimeTables {
     routes : Vec<TimeTable>,
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
+struct Station {
+    id : String,
+    name : String,
+    lat : f64,
+    lon : f64,
+}
+
+#[derive(Clone, Debug, RustcDecodable)]
 struct TimeTableResponse {
+    stations : Vec<Station>,
+    stops : Vec<Station>,
     timetable : RoutesTimeTables,
+}
+
+impl TimeTableResponse {
+    fn first_timetable(&self) -> Option<&TimeTable> {
+        match self.timetable.routes.len() > 0 {
+            true => Some(&self.timetable.routes[0]),
+            false => None,
+        }
+    }
 }
 
 impl MyClient {
     fn new() -> MyClient {
         let cache_path : &Path = Path::new("./cache");
-        fs::create_dir(cache_path).unwrap();
+        let _ = fs::create_dir(cache_path);
         return MyClient{
             client : Arc::new(Client::new()),
             app_id : String::new(),
@@ -157,11 +176,11 @@ fn get_lines(client : &MyClient) -> Vec<Line> {
     json::decode(&body).unwrap()
 }
 
-fn get_timetable(client : &MyClient, line_id : &str, originator: &str, destination : &str) -> Option<TimeTable> {
+fn get_timetable(client : &MyClient, line_id : &str, originator: &str, destination : &str) -> Option<TimeTableResponse> {
     let req_uri = format!("/line/{}/timetable/{}/to/{}", line_id, originator, destination);
     let body = client.get(&req_uri);
     match json::decode::<TimeTableResponse>(&body) {
-        Ok(ttresp) =>  Some(ttresp.timetable.routes[0].clone()),
+        Ok(ttresp) =>  Some(ttresp.clone()),
         Err(err) => {
             println!("Error decoding timetable {}", err);
             None
@@ -249,6 +268,31 @@ fn write_stops(gtfs_path : &str, lines : &Vec<Line>) {
                 },
             };
         }
+        for section in &line.routeSections {
+            match section.timetable {
+                Some(ref timetable) => {
+                    for station in &timetable.stations {
+                        match written_stops.contains(&station.id) {
+                            true => (),
+                            false => {
+                                wtr.encode((station.id.clone(), station.name.clone(), station.lat, station.lon)).unwrap();
+                                written_stops.insert(station.id.clone());
+                            },
+                        }
+                    }
+                    for stop in &timetable.stops {
+                        match written_stops.contains(&stop.id) {
+                            true => (),
+                            false => {
+                                wtr.encode((stop.id.clone(), stop.name.clone(), stop.lat, stop.lon)).unwrap();
+                                written_stops.insert(stop.id.clone());
+                            },
+                        }
+                    }
+                },
+                None => (),
+            }
+        }
     }
 }
 
@@ -309,7 +353,7 @@ fn write_route_section_trips(wtr : &mut csv::Writer<File>, line : &Line, section
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
-            for schedule in &timetable.schedules {
+            for schedule in &timetable.first_timetable().unwrap().schedules {
                 for journey in &schedule.knownJourneys {
                     let id = trip_id(line, section, schedule, journey);
                     match written_trips.contains(&id) {
@@ -373,10 +417,10 @@ fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, se
         None => (),
         Some(timetable) => {
             let mut intervals : HashMap<i64, &StationInterval> = HashMap::new();
-            for interval in &timetable.stationIntervals {
+            for interval in &timetable.first_timetable().as_ref().unwrap().stationIntervals {
                 intervals.insert(interval.id, interval);
             }
-            for schedule in &timetable.schedules {
+            for schedule in &timetable.first_timetable().unwrap().schedules {
                 for journey in &schedule.knownJourneys {
                     match intervals.get(&journey.intervalId) {
                         Some(interval) =>  {
@@ -422,7 +466,7 @@ fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
 fn write_gtfs(lines : &Vec<Line>) {
         let gtfs_path : &Path = Path::new("./gtfs");
         let gtfs_path_str = gtfs_path.to_str().unwrap();
-        fs::create_dir(gtfs_path_str).unwrap();
+        let _ = fs::create_dir(gtfs_path_str);
         write_agency(gtfs_path_str);
         write_routes(gtfs_path_str, lines);
         write_stops(gtfs_path_str, lines);
@@ -432,11 +476,11 @@ fn write_gtfs(lines : &Vec<Line>) {
 }
 
 fn main() {
-    // Fetch data
-    let client = Arc::new(MyClient::new());
-    let mut lines = get_lines(&client);
     let mut pool = Pool::new(10);
+    let client = Arc::new(MyClient::new());
 
+    // Fetch data
+    let mut lines = get_lines(&client);
     pool.scoped(|scope| {
         for line in &mut lines {
             let client = client.clone();
@@ -461,7 +505,7 @@ fn main() {
         for route_section in &line.routeSections {
             let has_timetable = match route_section.timetable {
                 Some(ref timetable) => {
-                    for schedule in &timetable.schedules {
+                    for schedule in &timetable.first_timetable().unwrap().schedules {
                         schedule_names.insert(schedule.name.clone());
                     }
                     true
