@@ -39,7 +39,8 @@ struct Line {
     stops : Option<Vec<Stop>>,
 }
 
-const DEFAULT_COLOR : &'static str = "FFFFFF";
+/// Default color string, use null so the importer can choose
+const DEFAULT_COLOR : &'static str = "";
 
 impl Line {
     /// Tube Color
