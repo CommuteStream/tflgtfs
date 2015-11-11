@@ -20,6 +20,8 @@ use rustc_serialize::json;
 
 use scoped_threadpool::Pool;
 
+
+
 #[derive(Clone)]
 struct MyClient {
     client : Arc<Client>,
@@ -35,6 +37,122 @@ struct Line {
     modeName : String,
     routeSections : Vec<RouteSection>,
     stops : Option<Vec<Stop>>,
+}
+
+/// Default color string, use null so the importer can choose
+const DEFAULT_COLOR : &'static str = "";
+
+impl Line {
+    /// Tube Color
+    fn tube_color(&self) -> &str {
+        match &self.name[..] {
+            "Bakerloo" => "894E24",
+            "Central" => "DC241F",
+            "Circle" => "FFCE00",
+            "District" => "007229",
+            "Hammersmith & City" => "D799AF",
+            "Jubilee" => "6A7278",
+            "Metropolitan" => "751056",
+            "Northern" => "000",
+            "Piccadilly" => "0019A8",
+            "Victoria" => "00A0E2",
+            "Waterloo & City" => "76D0BD",
+            _ => {
+                println!("Missing tube color for {}", self.name);
+                DEFAULT_COLOR
+            },
+        }
+    }
+
+    /// Tram Color
+    fn tram_color(&self) -> &str {
+        match &self.name[..] {
+            "Tram 1" => "C6D834",
+            "Tram 2" => "C6D834",
+            "Tram 3" => "79C23F",
+            "Tram 4" => "336B14",
+            _ => {
+                println!("Missing tram color for {}", self.name);
+                DEFAULT_COLOR
+            },
+        }
+    }
+
+    /// National Rail Color
+    fn national_rail_color(&self) -> &str {
+        match &self.name[..] {
+            "South West Trains" => "F11815",
+            "Southeastern" => "0071BF",
+            "Southern" => "00A74B",
+            "Great Northern" => "00A6E2",
+            "Arriva Trains Wales" => "00B9B4",
+            "c2c" => "F0188C",
+            "Chiltern Railways" => "B389C1",
+            "Cross Country" => "A03467",
+            "East Midlands Trains" => "E16C16",
+            "First Great Western" => "2D2B94",
+            "First Hull Trains" => "1B903F",
+            "First TransPennine Express" => "F265A0",
+            "Gatwick Express" => "231F20",
+            "Grand Central" => "3F3F40",
+            "Greater Anglia" => "8B8FA5",
+            "Heathrow Connect" => "F6858D",
+            "Heathrow Express" => "55C4BF",
+            "Island Line" => "F8B174",
+            "London Midland" => "8BC831",
+            "Merseyrail" => "FEC95F",
+            "Northern Rail" => "0569A8",
+            "ScotRail" => "96A3A9",
+            "Thameslink" => "DA4290",
+            "Virgin Trains" => "A8652C",
+            "Virgin Trains East Coast" => "9C0101",
+            _ => {
+                println!("Missing national rail color for {}", self.name);
+                DEFAULT_COLOR
+            },
+        }
+    }
+
+    /// River Bus Color
+    fn river_bus_color(&self) -> &str {
+        match &self.name[..] {
+            "RB1" => "2D3039",
+            "RB2" => "0072BC",
+            "RB4" => "61C29D",
+            "RB5" => "BA6830",
+            "RB6" => "DF64B0",
+            "Woolwich Ferry" => "F7931D",
+            _ => {
+                println!("Missing rail color for {}", self.name);
+                DEFAULT_COLOR
+            },
+        }
+    }
+
+    fn cable_car_color(&self) -> &str {
+        match &self.name[..] {
+            "Emirates Air Line" => "E51937",
+            _ => {
+                println!("Missing rail color for {}", self.name);
+                DEFAULT_COLOR
+            },
+        }
+    }
+
+    /// The Line's Color based on the TFL colors on tfl.gov.uk
+    fn color(&self) -> &str {
+        match &self.modeName[..] {
+            "dlr" => "00AFAD",
+            "overground" => "E86A10",
+            "tflrail" => "0019A8",
+            "tube" => self.tube_color(),
+            "tram" => self.tram_color(),
+            "national-rail" => self.national_rail_color(),
+            "river-bus" | "river-ferry" => self.river_bus_color(),
+            "cable-car" => self.cable_car_color(),
+            _ => DEFAULT_COLOR,
+        }
+    }
 }
 
 #[derive(Clone, Debug, RustcDecodable)]
@@ -57,7 +175,7 @@ struct RouteSection {
 
 #[derive(Clone, Debug, RustcDecodable)]
 struct Interval {
-    stopId : String, 
+    stopId : String,
     timeToArrival: f64,
 }
 
@@ -139,8 +257,8 @@ impl MyClient {
         let mut body = String::new();
         let mut resp = self.client.get(&req_uri)
             .header(Accept(vec![
-                qitem(Mime(TopLevel::Application,
-                    SubLevel::Ext("json".to_owned()), vec![])),
+                           qitem(Mime(TopLevel::Application,
+                                      SubLevel::Ext("json".to_owned()), vec![])),
             ]))
             .send().unwrap();
         resp.read_to_string(&mut body).unwrap();
@@ -236,9 +354,10 @@ fn write_routes(gtfs_path : &str, lines : &Vec<Line>) {
     let fname = format!("{}/{}", gtfs_path, "/routes.txt");
     let fpath = Path::new(&fname);
     let mut wtr = csv::Writer::from_file(fpath).unwrap();
-    wtr.encode(("route_id", "agency_id", "route_short_name", "route_long_name", "route_type")).unwrap();
+    wtr.encode(("route_id", "agency_id", "route_color", "route_short_name", "route_long_name", "route_type")).unwrap();
     for line in lines {
-        wtr.encode((&line.id, "tfl", &line.name, "", route_type(&line))).unwrap();
+        let line_color = line.color();
+        wtr.encode((&line.id, "tfl", &line_color, &line.name, "", route_type(&line))).unwrap();
     }
 }
 
@@ -337,7 +456,7 @@ fn write_calendar(gtfs_path : &str) {
         ("Sunday and other Public Holidays", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
         ("School Wednesday", "0", "0", "1", "0", "0", "0", "0", &start_date, &end_date),
         ("Monday - Friday", "1", "1", "1", "1", "1", "0", "0", &start_date, &end_date),
-    ];
+        ];
     for record in records {
         wtr.encode(record).unwrap();
     }
@@ -396,7 +515,7 @@ fn time_offset_fmt(journey : &KnownJourney, offset : f64) -> String {
     let minute_offset : u64 = dep_minute + rounded_offset;
     let hour : u64 = dep_hour + minute_offset / 60;
     let minute : u64 = minute_offset % 60;
-    format!("{:02}:{:02}", hour, minute) 
+    format!("{:02}:{:02}", hour, minute)
 }
 
 fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney, interval : &StationInterval) {
@@ -464,15 +583,15 @@ fn write_stop_times(gtfs_path : &str, lines : &Vec<Line>) {
 }
 
 fn write_gtfs(lines : &Vec<Line>) {
-        let gtfs_path : &Path = Path::new("./gtfs");
-        let gtfs_path_str = gtfs_path.to_str().unwrap();
-        let _ = fs::create_dir(gtfs_path_str);
-        write_agency(gtfs_path_str);
-        write_routes(gtfs_path_str, lines);
-        write_stops(gtfs_path_str, lines);
-        write_calendar(gtfs_path_str);
-        write_trips(gtfs_path_str, lines);
-        write_stop_times(gtfs_path_str, lines);
+    let gtfs_path : &Path = Path::new("./gtfs");
+    let gtfs_path_str = gtfs_path.to_str().unwrap();
+    let _ = fs::create_dir(gtfs_path_str);
+    write_agency(gtfs_path_str);
+    write_routes(gtfs_path_str, lines);
+    write_stops(gtfs_path_str, lines);
+    write_calendar(gtfs_path_str);
+    write_trips(gtfs_path_str, lines);
+    write_stop_times(gtfs_path_str, lines);
 }
 
 fn main() {
