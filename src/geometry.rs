@@ -9,13 +9,20 @@ use std::fmt;
 
 const PRECISION : f64 = 10000.0;
 
-/// Point
+/// Point containing latitude and longitude values as integers.
+/// Integers are used here due to Rust itself not providing some basic
+/// floating point functionality at the moment. All due to the undefined
+/// behavior revolving around NaN float values. For example, what is the boolean
+/// result of 0.0 > NaN ? Its undefined, so therefore > is not implemented by
+/// Rust Proper! Perhaps they'll fix this massive inconvienence in the future.
+/// TODO use floats 
 #[derive(PartialEq, Eq, Clone, Debug, Hash, Copy)]
 pub struct Point {
     lat : i64,
     lon : i64,
 }
 
+/// Degress to Radians
 fn deg2rad(deg : f64) -> f64 {
     ((2.0 * PI)/180.0) * deg
 }
@@ -27,6 +34,7 @@ impl fmt::Display for Point {
 }
 
 impl Point {
+    /// New integer stored Point from floating point lat/lon coordinates
     pub fn new(lat : f64, lon : f64) -> Point {
         Point {
             lat : (lat*PRECISION).floor() as i64,
@@ -34,14 +42,18 @@ impl Point {
         }
     }
 
+    /// Latitude value
     pub fn lat(&self) -> f64 {
         (self.lat as f64)/PRECISION
     }
 
+    /// Longitude value
     pub fn lon(&self) -> f64 {
         (self.lon as f64)/PRECISION
     }
 
+    /// Spheroid distance calculation given earth coordinates as lat/lon values.
+    /// Returns the distance in meters.
     pub fn geo_distance(&self, p : &Point) -> f64 {
         let R = 6371000.0; // metres
         let lat1 = p.lat();
