@@ -160,6 +160,11 @@ impl RouteGraph {
         self.find_path(start, end, &visited)
     }
 
+    // Recursively search the path graph from p0 to p1, when a path is found
+    // the callstack will inherently build up a single Path containing all the
+    // points between the two.
+    // Visited is a simple HashSet marking points we've already visited to avoid
+    // infinitely recursing in circles.
     fn find_path(&self, p0 : Point, p1 : Point, visited : &HashSet<Point>) -> Option<Path> {
         match self.edges.get(&p0) {
             Some(to_vertices) => match visited.contains(&p0) {
