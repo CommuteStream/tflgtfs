@@ -71,6 +71,9 @@ pub struct RouteGraph {
     paths : HashMap<(Point, Point), Path>,
 }
 
+/// Convert the TFL lineStrings attribute to a simple flat vectory of paths.
+/// lineStrings in TFL data is a JSON array of string values, containing
+/// either an array of points or an array of arrays of points, we handle both.
 pub fn linestrings_to_paths(line_strings : &Vec<String>) -> Vec<Path> {
     let mut paths : Vec<Path> = Vec::new();
     for line_string in line_strings {
