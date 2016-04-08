@@ -79,7 +79,7 @@ fn write_gtfs_temp() {
 
     // Generate a report
     let mut line_count = 0;
-    let mut line_ids : HashSet<String> = HashSet::new();
+    let mut line_ids: HashSet<String> = HashSet::new();
     let mut route_section_count = 0;
     let mut route_section_ids: HashSet<String> = HashSet::new();
     let mut schedule_names: HashSet<String> = HashSet::new();

@@ -262,40 +262,45 @@ fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section 
     }
 }
 
-fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
+fn intervals<'a>(station_intervals: &'a Vec<StationInterval>) -> HashMap<i64, &'a StationInterval> {
+    station_intervals.iter().map(|x| (x.id, x)).collect()
+}
+
+fn trips(timetable: &TimeTableResponse, line: &Line, section: &RouteSection, wtr: &mut csv::Writer<File>) {
     let mut written_trips : HashSet<String> = HashSet::new();
+    let record: Option<&TimeTable> = timetable.first_timetable();
+
+    match record {
+        None => (),
+        Some(ref datum) => {
+            let intervals = intervals(&datum.stationIntervals);
+
+            for schedule in &datum.schedules {
+                for journey in &schedule.knownJourneys {
+                    match intervals.get(&journey.intervalId) {
+                        Some(interval) => {
+                            let id = trip_id(line, section, schedule, journey);
+                            match written_trips.contains(&id) {
+                                true => (),
+                                false => {
+                                    written_trips.insert(id.clone());
+                                    write_journey_stop_times(wtr, line, section, schedule, journey, interval);
+                                }
+                            }
+                        },
+                        None => println!("Error, Could not find interval for schedule!!!!"),
+                    };
+                }
+            };
+        }
+    }
+}
+
+fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
-            let mut intervals : HashMap<i64, &StationInterval> = HashMap::new();
-            let first: Option<&TimeTable> = timetable.first_timetable();
-
-            match first {
-                None => (),
-                Some(ref x) => {
-                    let stationIntervals = &x.stationIntervals;
-                    for interval in stationIntervals {
-                        intervals.insert(interval.id, interval);
-                    }
-                    for schedule in &x.schedules {
-                        for journey in &schedule.knownJourneys {
-                            match intervals.get(&journey.intervalId) {
-                                Some(interval) =>  {
-                                    let id = trip_id(line, section, schedule, journey);
-                                    match written_trips.contains(&id) {
-                                        true => (),
-                                        false => {
-                                            written_trips.insert(id.clone());
-                                            write_journey_stop_times(wtr, line, section, schedule, journey, interval);
-                                        }
-                                    }
-                                },
-                                None => println!("Error, Could not find interval for schedule!!!!"),
-                            };
-                        }
-                    };
-                }
-            }
+            trips(timetable, line, section, wtr);
         },
     }
 
@@ -326,7 +331,7 @@ fn write_shape_path(wtr : &mut csv::Writer<File>, shape_id : &String, path : &Ve
     let mut seq = 0;
     for pt in path {
         wtr.encode((shape_id, pt.lat(), pt.lon(), seq)).unwrap();
-        seq += 1; 
+        seq += 1;
     }
 }
 
