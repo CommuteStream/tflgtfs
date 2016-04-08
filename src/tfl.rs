@@ -282,6 +282,14 @@ impl Client {
         }
     }
 
+    pub fn get_cached_lines(&self) -> Vec<Line> {
+        let body = self.cache_get("/line/route");
+        match body {
+            Some(x) => json::decode(&x).unwrap(),
+            None => vec![]
+        }
+    }
+
     pub fn get_lines(&self) -> Vec<Line> {
         let body = self.get("/line/route");
         json::decode(&body).unwrap()

@@ -193,15 +193,22 @@ fn write_route_section_trips(wtr : &mut csv::Writer<File>, shape_id : &String, l
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
-            for schedule in &timetable.first_timetable().unwrap().schedules {
-                for journey in &schedule.knownJourneys {
-                    let id = trip_id(line, section, schedule, journey);
-                    match written_trips.contains(&id) {
-                        true => (),
-                        false => {
-                            written_trips.insert(id.clone());
-                            wtr.encode((&line.id, &schedule.name, &id, &direction, &shape_id)).unwrap();
-                        },
+            let first: Option<&TimeTable> = timetable.first_timetable();
+
+            match first {
+                None => (),
+                Some(ref x) => {
+                    for schedule in &x.schedules {
+                        for journey in &schedule.knownJourneys {
+                            let id = trip_id(line, section, schedule, journey);
+                            match written_trips.contains(&id) {
+                                true => (),
+                                false => {
+                                    written_trips.insert(id.clone());
+                                    wtr.encode((&line.id, &schedule.name, &id, &direction, &shape_id)).unwrap();
+                                },
+                            }
+                        }
                     }
                 }
             }
@@ -261,26 +268,34 @@ fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, se
         None => (),
         Some(timetable) => {
             let mut intervals : HashMap<i64, &StationInterval> = HashMap::new();
-            for interval in &timetable.first_timetable().as_ref().unwrap().stationIntervals {
-                intervals.insert(interval.id, interval);
-            }
-            for schedule in &timetable.first_timetable().unwrap().schedules {
-                for journey in &schedule.knownJourneys {
-                    match intervals.get(&journey.intervalId) {
-                        Some(interval) =>  {
-                            let id = trip_id(line, section, schedule, journey);
-                            match written_trips.contains(&id) {
-                                true => (),
-                                false => {
-                                    written_trips.insert(id.clone());
-                                    write_journey_stop_times(wtr, line, section, schedule, journey, interval);
-                                }
-                            }
-                        },
-                        None => println!("Error, Could not find interval for schedule!!!!"),
+            let first: Option<&TimeTable> = timetable.first_timetable();
+
+            match first {
+                None => (),
+                Some(ref x) => {
+                    let stationIntervals = &x.stationIntervals;
+                    for interval in stationIntervals {
+                        intervals.insert(interval.id, interval);
+                    }
+                    for schedule in &x.schedules {
+                        for journey in &schedule.knownJourneys {
+                            match intervals.get(&journey.intervalId) {
+                                Some(interval) =>  {
+                                    let id = trip_id(line, section, schedule, journey);
+                                    match written_trips.contains(&id) {
+                                        true => (),
+                                        false => {
+                                            written_trips.insert(id.clone());
+                                            write_journey_stop_times(wtr, line, section, schedule, journey, interval);
+                                        }
+                                    }
+                                },
+                                None => println!("Error, Could not find interval for schedule!!!!"),
+                            };
+                        }
                     };
                 }
-            };
+            }
         },
     }
 
