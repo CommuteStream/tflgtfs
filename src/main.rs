@@ -18,7 +18,7 @@ use tfl::*;
 use gtfs::*;
 
 fn main() {
-    let mut pool = Pool::new(10);
+    let mut pool = Pool::new(6);
     let client = Arc::new(Client::new());
 
     // Fetch data

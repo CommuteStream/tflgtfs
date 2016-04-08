@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Tom Burdick <thomas.burdick@gmail.com>"]
 
 [dependencies]
-hyper = "0.6"
+hyper = "0.8"
 rustc-serialize = "0.3"
 scoped_threadpool = "0.1"
 csv = "0.14"
