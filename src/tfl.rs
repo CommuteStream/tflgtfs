@@ -7,6 +7,8 @@ use std::io::{Read, Write};
 use std::sync::Arc;
 use std::fs;
 
+use std::collections::HashSet;
+
 use rustc_serialize::json;
 
 #[derive(Clone)]
@@ -223,6 +225,21 @@ impl TimeTableResponse {
         match self.timetable.routes.len() > 0 {
             true => Some(&self.timetable.routes[0]),
             false => None,
+        }
+    }
+}
+
+pub fn collect_schedule_names(timetable: &TimeTableResponse) -> HashSet<String> {
+    let mut schedule_names: HashSet<String> = HashSet::new();
+    let record: Option<&TimeTable> = timetable.first_timetable();
+
+    match record {
+        None => schedule_names,
+        Some(ref datum) => {
+            for schedule in &datum.schedules {
+                schedule_names.insert(schedule.name.clone());
+            }
+            schedule_names
         }
     }
 }

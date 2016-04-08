@@ -26,7 +26,7 @@ use tfl::*;
 use gtfs::*;
 use format::{OutputFormat};
 
-fn old_main() {
+fn fetch_lines() {
     let mut pool = Pool::new(5);
     let client = Arc::new(Client::new());
 
@@ -46,42 +46,6 @@ fn old_main() {
             });
         }
     });
-
-    // Generate a report
-    let mut line_count = 0;
-    let mut line_ids : HashSet<String> = HashSet::new();
-    let mut route_section_count = 0;
-    let mut route_section_ids: HashSet<String> = HashSet::new();
-    let mut schedule_names: HashSet<String> = HashSet::new();
-    for line in &lines {
-        println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
-        for route_section in &line.routeSections {
-            let has_timetable = match route_section.timetable {
-                Some(ref timetable) => {
-                    for schedule in &timetable.first_timetable().unwrap().schedules {
-                        schedule_names.insert(schedule.name.clone());
-                    }
-                    true
-                },
-                None => false,
-            };
-            let id = route_section_id(&line, &route_section);
-            println!("\t{}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
-            route_section_ids.insert(id.clone());
-            route_section_count += 1;
-        }
-        line_count += 1;
-        line_ids.insert(line.id.clone());
-    }
-    println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count-line_ids.len(), route_section_count-route_section_ids.len());
-
-    println!("Schedule Names:");
-    for schedule_name in &schedule_names {
-        println!("\t{}", schedule_name);
-    }
-
-    // Generate CSV files from fetched data
-    write_gtfs(&lines);
 }
 
 fn transform(format: OutputFormat) {
@@ -123,22 +87,17 @@ fn write_gtfs_temp() {
     for line in &lines {
         println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
         for route_section in &line.routeSections {
-            let has_timetable = match route_section.timetable {
-                Some(ref timetable) => {
-                    let first: Option<&TimeTable> = timetable.first_timetable();
+            let has_timetable = true; //TODO: Fix me
 
-                    match first {
-                        Some(ref x) => {
-                            for schedule in &x.schedules {
-                                schedule_names.insert(schedule.name.clone());
-                            }
-                            true
-                        },
-                        None => false,
-                    }
+            match route_section.timetable {
+                Some(ref timetable) => {
+                    let names = collect_schedule_names(timetable);
+                    schedule_names = schedule_names.union(&names).cloned().collect::<HashSet<String>>();
+                    names.is_empty()
                 },
                 None => false,
             };
+
             let id = route_section_id(&line, &route_section);
             println!("\t{}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
             route_section_ids.insert(id.clone());
@@ -176,7 +135,7 @@ fn main() {
                       .get_matches();
 
     if let Some(_) = matches.subcommand_matches("fetch-lines") {
-        old_main();
+        fetch_lines();
     }
 
     if let Some(ref matches) = matches.subcommand_matches("transform") {
