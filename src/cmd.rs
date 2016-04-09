@@ -66,7 +66,7 @@ fn transform_gtfs(lines: Vec<Line>) {
         for route_section in &line.routeSections {
             let has_timetable = match route_section.timetable {
                 Some(ref timetable) => {
-                    let names = collect_schedule_names(timetable);
+                    let names = timetable.schedule_names();
                     schedule_names = schedule_names.union(&names).cloned().collect::<HashSet<String>>();
                     names.is_empty()
                 },

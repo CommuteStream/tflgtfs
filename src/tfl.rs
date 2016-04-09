@@ -232,20 +232,15 @@ impl TimeTableResponse {
             false => None,
         }
     }
-}
 
-pub fn collect_schedule_names(timetable: &TimeTableResponse) -> HashSet<String> {
-    let mut schedule_names: HashSet<String> = HashSet::new();
-    let record: Option<&TimeTable> = timetable.first_timetable();
-
-    match record {
-        None => schedule_names,
-        Some(ref datum) => {
-            for schedule in &datum.schedules {
-                schedule_names.insert(schedule.name.clone());
-            }
-            schedule_names
+    pub fn schedule_names(&self) -> HashSet<String> {
+        if let Some(record) = *&self.first_timetable() {
+            return record.schedules.iter()
+                                   .map(|x| x.name.clone())
+                                   .collect();
         }
+
+        HashSet::new()
     }
 }
 
