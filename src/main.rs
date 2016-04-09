@@ -16,6 +16,14 @@ mod cmd;
 use clap::{Arg, App, SubCommand};
 use format::{OutputFormat};
 
+fn arg_format<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("format")
+        .help("Output format")
+        .possible_values(&["gtfs"])
+        .long("format")
+        .value_name("format")
+}
+
 fn main() {
     env_logger::init().unwrap();
 
@@ -24,21 +32,15 @@ fn main() {
                       .about("Tfl consumer")
                       .subcommand(SubCommand::with_name("fetch-lines")
                                              .about("Fetch lines from Tfl")
-                                             .arg(Arg::with_name("format")
-                                                      .help("Output format")
-                                                      .long("format")
-                                                      .value_name("format")
-                                                      .possible_values(&["gtfs"]))
+                                             .arg(arg_format())
                                              .arg(Arg::with_name("threads")
                                                       .help("Number of threads. Defaults to 5")
                                                       .long("threads")
                                                       .value_name("number")))
                       .subcommand(SubCommand::with_name("transform")
                                              .about("Transform cached data to the given format")
-                                             .arg(Arg::with_name("format")
-                                                      .help("Output format")
+                                             .arg(arg_format()
                                                       .index(1)
-                                                      .possible_values(&["gtfs"])
                                                       .required(true))
                                              .arg(Arg::with_name("threads")
                                                       .help("Number of threads. Defaults to 5")
