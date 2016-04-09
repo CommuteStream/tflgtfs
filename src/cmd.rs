@@ -1,11 +1,13 @@
+use rand;
+use rand::distributions::{IndependentSample, Range};
 use scoped_threadpool::Pool;
-use std::sync::Arc;
 use std::collections::HashSet;
 use std::process;
+use std::sync::Arc;
 
-use tfl::*;
-use gtfs::*;
 use format::{OutputFormat};
+use gtfs::*;
+use tfl::*;
 
 
 pub fn fetch_lines(format: OutputFormat, thread_number: u32, sample_size: Option<usize>) {
@@ -36,11 +38,16 @@ fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<u
         DataSource::API   => client.get_lines(),
     };
 
-    // TODO: given a random number r and a sample size n the sample window
-    // should be [r .. (r + n)] as long as (r + n) is <= lines.len().
     if let Some(n) = sample_size {
         if n <= lines.len() {
-            lines = lines[1 .. n].to_vec();
+            let between = Range::new(0usize, lines.len());
+            let mut rng = rand::thread_rng();
+            let r = between.ind_sample(&mut rng);
+            let s = if (r + n) > lines.len() { lines.len() } else { (r + n) };
+
+            println!("Sample: {:?}", (r, s));
+
+            lines = lines[r .. s].to_vec();
         }
     }
 

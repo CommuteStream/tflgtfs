@@ -1,17 +1,17 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate log;
+extern crate csv;
 extern crate env_logger;
-
 extern crate hyper;
+extern crate rand;
 extern crate rustc_serialize;
 extern crate scoped_threadpool;
-extern crate csv;
 
+mod cmd;
 mod format;
 mod geometry;
-mod tfl;
 mod gtfs;
-mod cmd;
+mod tfl;
 
 use clap::{Arg, App, SubCommand};
 use format::{OutputFormat};
