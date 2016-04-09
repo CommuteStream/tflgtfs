@@ -266,44 +266,32 @@ fn intervals<'a>(station_intervals: &'a Vec<StationInterval>) -> HashMap<i64, &'
     station_intervals.iter().map(|x| (x.id, x)).collect()
 }
 
-fn trips(timetable: &TimeTableResponse, line: &Line, section: &RouteSection, wtr: &mut csv::Writer<File>) {
-    let mut written_trips : HashSet<String> = HashSet::new();
-    let record: Option<&TimeTable> = timetable.first_timetable();
-
-    match record {
-        None => (),
-        Some(ref datum) => {
-            let intervals = intervals(&datum.stationIntervals);
-
-            for schedule in &datum.schedules {
-                for journey in &schedule.knownJourneys {
-                    match intervals.get(&journey.intervalId) {
-                        Some(interval) => {
-                            let id = trip_id(line, section, schedule, journey);
-                            match written_trips.contains(&id) {
-                                true => (),
-                                false => {
-                                    written_trips.insert(id.clone());
-                                    write_journey_stop_times(wtr, line, section, schedule, journey, interval);
-                                }
-                            }
-                        },
-                        None => println!("Error, Could not find interval for schedule!!!!"),
-                    };
-                }
-            };
-        }
-    }
-}
-
 fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section : &RouteSection) {
     match section.timetable.as_ref() {
         None => (),
         Some(timetable) => {
-            trips(timetable, line, section, wtr);
+            let mut written_trips : HashSet<String> = HashSet::new();
+            let record: Option<&TimeTable> = timetable.first_timetable();
+
+            if let Some(ref datum) = record {
+                let intervals = intervals(&datum.stationIntervals);
+                for schedule in &datum.schedules {
+                    for journey in &schedule.knownJourneys {
+                        intervals.get(&journey.intervalId)
+                                 .map(|interval| {
+                                    let id = trip_id(line, section, schedule, journey);
+
+                                    if !written_trips.contains(&id) {
+                                        written_trips.insert(id.clone());
+                                        write_journey_stop_times(wtr, line, section, schedule, journey, interval);
+                                    }
+                                 })
+                                 .unwrap_or_else(|| { println!("Error, Could not find interval for schedule!!!!"); });
+                    }
+                }
+            }
         },
     }
-
 }
 
 fn write_stop_times(gtfs_path : &str, routes : &Vec<Route>) {

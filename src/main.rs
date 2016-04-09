@@ -26,41 +26,27 @@ use tfl::*;
 use gtfs::*;
 use format::{OutputFormat};
 
-fn fetch_lines() {
-    let mut pool = Pool::new(5);
-    let client = Arc::new(Client::new());
-
-    // Fetch data
-    let mut lines = client.get_lines();
-    pool.scoped(|scope| {
-        for line in &mut lines {
-            let client = client.clone();
-            scope.execute(move || {
-                line.inbound_sequence = client.get_sequence(&line.id, "inbound");
-                line.outbound_sequence = client.get_sequence(&line.id, "outbound");
-                line.stops = Some(client.get_stops(&line.id));
-                for route_section in &mut line.routeSections {
-                    println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
-                    route_section.timetable = client.get_timetable(&line.id, &route_section.originator, &route_section.destination);
-                }
-            });
-        }
-    });
+fn cmd_fetch_lines() {
+    let lines = fetch_lines(DataSource::API);
 }
 
-fn transform(format: OutputFormat) {
+fn cmd_transform(format: OutputFormat) {
     match format {
-        OutputFormat::GTFS => write_gtfs_temp(),
+        OutputFormat::GTFS => transform_gtfs(),
         _ => println!("nope")
     }
 }
 
-fn write_gtfs_temp() {
+fn fetch_lines(data_source: DataSource) -> Vec<Line> {
     let mut pool = Pool::new(5);
     let client = Arc::new(Client::new());
 
     // Fetch data
-    let mut lines = client.get_cached_lines();
+    let mut lines = match data_source {
+        DataSource::Cache => client.get_cached_lines(),
+        DataSource::API   => client.get_lines(),
+    };
+
     pool.scoped(|scope| {
         for line in &mut lines {
             let client = client.clone();
@@ -76,6 +62,11 @@ fn write_gtfs_temp() {
         }
     });
 
+    lines
+}
+
+fn transform_gtfs() {
+    let lines = fetch_lines(DataSource::Cache);
 
     // Generate a report
     let mut line_count = 0;
@@ -135,11 +126,11 @@ fn main() {
                       .get_matches();
 
     if let Some(_) = matches.subcommand_matches("fetch-lines") {
-        fetch_lines();
+        cmd_fetch_lines();
     }
 
     if let Some(ref matches) = matches.subcommand_matches("transform") {
         let format = value_t!(matches, "format", OutputFormat).unwrap_or_else(|e| e.exit());
-        transform(format);
+        cmd_transform(format);
     }
 }

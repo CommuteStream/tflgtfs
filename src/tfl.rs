@@ -11,6 +11,11 @@ use std::collections::HashSet;
 
 use rustc_serialize::json;
 
+pub enum DataSource {
+    API,
+    Cache
+}
+
 #[derive(Clone)]
 pub struct Client {
     client : Arc<hyper::Client>,
