@@ -36,7 +36,11 @@ fn main() {
                                              .arg(Arg::with_name("threads")
                                                       .help("Number of threads. Defaults to 5")
                                                       .long("threads")
-                                                      .value_name("number")))
+                                                      .value_name("number"))
+                                             .arg(Arg::with_name("sample")
+                                                      .help("Take a sample of the given size")
+                                                      .long("sample")
+                                                      .value_name("size")))
                       .subcommand(SubCommand::with_name("transform")
                                              .about("Transform cached data to the given format")
                                              .arg(arg_format()
@@ -45,18 +49,24 @@ fn main() {
                                              .arg(Arg::with_name("threads")
                                                       .help("Number of threads. Defaults to 5")
                                                       .long("threads")
-                                                      .value_name("number")))
+                                                      .value_name("number"))
+                                             .arg(Arg::with_name("sample")
+                                                      .help("Take a sample of the given size")
+                                                      .long("sample")
+                                                      .value_name("size")))
                       .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("fetch-lines") {
         let format = value_t!(matches, "format", OutputFormat).unwrap_or(OutputFormat::None);
         let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
-        cmd::fetch_lines(format, thread_number);
+        let sample_size = value_t!(matches, "sample", usize).ok();
+        cmd::fetch_lines(format, thread_number, sample_size);
     }
 
     if let Some(ref matches) = matches.subcommand_matches("transform") {
         let format = value_t!(matches, "format", OutputFormat).unwrap_or_else(|e| e.exit());
         let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
-        cmd::transform(format, thread_number);
+        let sample_size = value_t!(matches, "sample", usize).ok();
+        cmd::transform(format, thread_number, sample_size);
     }
 }

@@ -8,8 +8,8 @@ use gtfs::*;
 use format::{OutputFormat};
 
 
-pub fn fetch_lines(format: OutputFormat, thread_number: u32) {
-    let lines = load_lines(DataSource::API, thread_number);
+pub fn fetch_lines(format: OutputFormat, thread_number: u32, sample_size: Option<usize>) {
+    let lines = load_lines(DataSource::API, thread_number, sample_size);
 
     match format {
         OutputFormat::GTFS => transform_gtfs(lines),
@@ -17,8 +17,8 @@ pub fn fetch_lines(format: OutputFormat, thread_number: u32) {
     }
 }
 
-pub fn transform(format: OutputFormat, thread_number: u32) {
-    let lines = load_lines(DataSource::Cache, thread_number);
+pub fn transform(format: OutputFormat, thread_number: u32, sample_size: Option<usize>) {
+    let lines = load_lines(DataSource::Cache, thread_number, sample_size);
 
     match format {
         OutputFormat::GTFS => transform_gtfs(lines),
@@ -27,7 +27,7 @@ pub fn transform(format: OutputFormat, thread_number: u32) {
 }
 
 
-fn load_lines(data_source: DataSource, thread_number: u32) -> Vec<Line> {
+fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<usize>) -> Vec<Line> {
     let mut pool = Pool::new(thread_number);
     let client = Arc::new(Client::new());
 
@@ -35,6 +35,14 @@ fn load_lines(data_source: DataSource, thread_number: u32) -> Vec<Line> {
         DataSource::Cache => client.get_cached_lines(),
         DataSource::API   => client.get_lines(),
     };
+
+    // TODO: given a random number r and a sample size n the sample window
+    // should be [r .. (r + n)] as long as (r + n) is <= lines.len().
+    if let Some(n) = sample_size {
+        if n <= lines.len() {
+            lines = lines[1 .. n].to_vec();
+        }
+    }
 
     pool.scoped(|scope| {
         for line in &mut lines {
