@@ -83,7 +83,7 @@ fn transform_gtfs(lines: Vec<Line>) {
         line_count += 1;
         line_ids.insert(line.id.clone());
     }
-    println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count-line_ids.len(), route_section_count-route_section_ids.len());
+    println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count - line_ids.len(), route_section_count-route_section_ids.len());
 
     println!("Schedule Names:");
     for schedule_name in &schedule_names {
