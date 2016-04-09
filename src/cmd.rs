@@ -81,6 +81,12 @@ fn transform_gtfs(lines: Vec<Line>) {
         line_count += 1;
         line_ids.insert(line.id.clone());
     }
+
+    if lines.is_empty() {
+        println!("No lines found in the cache, try fetching some data first");
+        process::exit(0);
+    }
+
     println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count - line_ids.len(), route_section_count-route_section_ids.len());
 
     println!("Schedule Names:");
