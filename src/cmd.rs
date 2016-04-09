@@ -64,9 +64,7 @@ fn transform_gtfs(lines: Vec<Line>) {
     for line in &lines {
         println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
         for route_section in &line.routeSections {
-            let has_timetable = true; //TODO: Fix me
-
-            match route_section.timetable {
+            let has_timetable = match route_section.timetable {
                 Some(ref timetable) => {
                     let names = collect_schedule_names(timetable);
                     schedule_names = schedule_names.union(&names).cloned().collect::<HashSet<String>>();
