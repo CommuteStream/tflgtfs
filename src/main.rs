@@ -23,28 +23,38 @@ fn main() {
                       .version(env!("CARGO_PKG_VERSION"))
                       .about("Tfl consumer")
                       .subcommand(SubCommand::with_name("fetch-lines")
-                                             .about("Fetch lines from Tfl.")
+                                             .about("Fetch lines from Tfl")
                                              .arg(Arg::with_name("format")
                                                       .help("Output format")
                                                       .long("format")
                                                       .value_name("format")
-                                                      .possible_values(&["gtfs"])))
+                                                      .possible_values(&["gtfs"]))
+                                             .arg(Arg::with_name("threads")
+                                                      .help("Number of threads")
+                                                      .long("threads")
+                                                      .value_name("number")))
                       .subcommand(SubCommand::with_name("transform")
-                                             .about("Transform cached data to format")
+                                             .about("Transform cached data to the given format")
                                              .arg(Arg::with_name("format")
                                                       .help("Output format")
                                                       .index(1)
                                                       .possible_values(&["gtfs"])
-                                                      .required(true)))
+                                                      .required(true))
+                                             .arg(Arg::with_name("threads")
+                                                      .help("Number of threads")
+                                                      .long("threads")
+                                                      .value_name("number")))
                       .get_matches();
 
     if let Some(ref matches) = matches.subcommand_matches("fetch-lines") {
         let format = value_t!(matches, "format", OutputFormat).unwrap_or(OutputFormat::None);
-        cmd::fetch_lines(format);
+        let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
+        cmd::fetch_lines(format, thread_number);
     }
 
     if let Some(ref matches) = matches.subcommand_matches("transform") {
         let format = value_t!(matches, "format", OutputFormat).unwrap_or_else(|e| e.exit());
-        cmd::transform(format);
+        let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
+        cmd::transform(format, thread_number);
     }
 }

@@ -8,8 +8,8 @@ use gtfs::*;
 use format::{OutputFormat};
 
 
-pub fn fetch_lines(format: OutputFormat) {
-    let lines = load_lines(DataSource::API);
+pub fn fetch_lines(format: OutputFormat, thread_number: u32) {
+    let lines = load_lines(DataSource::API, thread_number);
 
     match format {
         OutputFormat::GTFS => transform_gtfs(lines),
@@ -17,8 +17,8 @@ pub fn fetch_lines(format: OutputFormat) {
     }
 }
 
-pub fn transform(format: OutputFormat) {
-    let lines = load_lines(DataSource::Cache);
+pub fn transform(format: OutputFormat, thread_number: u32) {
+    let lines = load_lines(DataSource::Cache, thread_number);
 
     match format {
         OutputFormat::GTFS => transform_gtfs(lines),
@@ -27,8 +27,8 @@ pub fn transform(format: OutputFormat) {
 }
 
 
-fn load_lines(data_source: DataSource) -> Vec<Line> {
-    let mut pool = Pool::new(5);
+fn load_lines(data_source: DataSource, thread_number: u32) -> Vec<Line> {
+    let mut pool = Pool::new(thread_number);
     let client = Arc::new(Client::new());
 
     let mut lines = match data_source {
