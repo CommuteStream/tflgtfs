@@ -30,7 +30,7 @@ fn main() {
                                                       .value_name("format")
                                                       .possible_values(&["gtfs"]))
                                              .arg(Arg::with_name("threads")
-                                                      .help("Number of threads")
+                                                      .help("Number of threads. Defaults to 5")
                                                       .long("threads")
                                                       .value_name("number")))
                       .subcommand(SubCommand::with_name("transform")
@@ -41,7 +41,7 @@ fn main() {
                                                       .possible_values(&["gtfs"])
                                                       .required(true))
                                              .arg(Arg::with_name("threads")
-                                                      .help("Number of threads")
+                                                      .help("Number of threads. Defaults to 5")
                                                       .long("threads")
                                                       .value_name("number")))
                       .get_matches();
