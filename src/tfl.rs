@@ -1,15 +1,14 @@
-use hyper;
+use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
 use hyper::header::{Accept, qitem};
 use hyper::mime::{Mime, TopLevel, SubLevel};
-
-use std::path::Path;
-use std::io::{Read, Write};
-use std::sync::Arc;
-use std::fs;
-
-use std::collections::HashSet;
-
+use hyper;
 use rustc_serialize::json;
+use std::collections::HashSet;
+use std::fmt;
+use std::fs;
+use std::io::{Read, Write};
+use std::path::Path;
+use std::sync::Arc;
 
 pub enum DataSource {
     API,
@@ -148,6 +147,13 @@ impl Line {
             "cable-car" => self.cable_car_color(),
             _ => DEFAULT_COLOR,
         }
+    }
+}
+
+impl fmt::Display for Line {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let id: &str = &self.id;
+        write!(f, "{} {}", Green.bold().paint("Line"), Blue.bold().paint(id))
     }
 }
 

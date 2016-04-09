@@ -1,4 +1,5 @@
 use rand;
+use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
 use rand::distributions::{IndependentSample, Range};
 use scoped_threadpool::Pool;
 use std::collections::HashSet;
@@ -83,7 +84,13 @@ fn transform_gtfs(lines: Vec<Line>) {
     let mut schedule_names: HashSet<String> = HashSet::new();
 
     for line in &lines {
-        println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
+        let is_duplicated = match line_ids.contains(&line.id) {
+            true => Red.paint("yes"),
+            false => Green.paint("no"),
+        };
+
+        println!("{}; Duplicate: {}", line, is_duplicated);
+
         for route_section in &line.routeSections {
             let has_timetable = match route_section.timetable {
                 Some(ref timetable) => {
