@@ -39,11 +39,17 @@ fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<u
     };
 
     if let Some(n) = sample_size {
-        if n <= lines.len() {
-            let between = Range::new(0usize, lines.len());
+        let limit = lines.len();
+
+        if n <= limit {
+            let between = Range::new(0usize, limit);
             let mut rng = rand::thread_rng();
-            let r = between.ind_sample(&mut rng);
-            let s = if (r + n) > lines.len() { lines.len() } else { (r + n) };
+            let seed = between.ind_sample(&mut rng);
+            let (r, s) = if (seed + n) > limit {
+                             ((limit - seed), limit)
+                         } else {
+                             (seed, (seed + n))
+                         };
 
             println!("Sample: {:?}", (r, s));
 
