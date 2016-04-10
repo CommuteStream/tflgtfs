@@ -5,7 +5,7 @@ use std::collections::{HashSet, HashMap};
 use std::fs::File;
 use std::fs;
 
-use tfl::*;
+use tfl::line::{Line, TimeTable, RouteSection, Schedule, KnownJourney, StationInterval};
 use geometry::{linestrings_to_paths, RouteGraph, Point};
 
 struct Route<'a> {

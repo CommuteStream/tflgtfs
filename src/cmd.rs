@@ -7,8 +7,9 @@ use std::process;
 use std::sync::Arc;
 
 use format::{OutputFormat};
-use gtfs::*;
-use tfl::*;
+use gtfs::{write_gtfs, route_section_id};
+use tfl::line::{Line};
+use tfl::client::{Client, DataSource};
 
 
 pub fn fetch_lines(format: OutputFormat, thread_number: u32, sample_size: Option<usize>) {
