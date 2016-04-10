@@ -29,6 +29,27 @@ pub fn transform(format: OutputFormat, thread_number: u32, sample_size: Option<u
     }
 }
 
+fn sample<T: Clone>(xs: Vec<T>, size: usize) -> Vec<T> {
+    let len = xs.len();
+
+    if size > len { return xs }
+
+    let between = Range::new(0usize, (len - size));
+    let mut rng = rand::thread_rng();
+    let seed = between.ind_sample(&mut rng);
+    let lower = seed;
+    let upper = seed + size;
+
+    println!("{}: {}..{}", Green.bold().paint("Sample window"), lower, upper);
+
+    xs[lower .. upper].to_vec()
+}
+
+#[test]
+fn sample_test() {
+    assert_eq!(sample(vec![0; 100], 200).len(), 100);
+    assert_eq!(sample(vec![0; 100], 10).len(), 10);
+}
 
 fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<usize>) -> Vec<Line> {
     let mut pool = Pool::new(thread_number);
@@ -40,22 +61,7 @@ fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<u
     };
 
     if let Some(n) = sample_size {
-        let limit = lines.len();
-
-        if n <= limit {
-            let between = Range::new(0usize, limit);
-            let mut rng = rand::thread_rng();
-            let seed = between.ind_sample(&mut rng);
-            let (r, s) = if (seed + n) > limit {
-                             ((limit - seed), limit)
-                         } else {
-                             (seed, (seed + n))
-                         };
-
-            println!("Sample: {:?}", (r, s));
-
-            lines = lines[r .. s].to_vec();
-        }
+        lines = sample(lines, n);
     }
 
     pool.scoped(|scope| {
@@ -66,7 +72,9 @@ fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<u
                 line.outbound_sequence = client.get_sequence(&line.id, "outbound");
                 line.stops = Some(client.get_stops(&line.id));
                 for route_section in &mut line.routeSections {
-                    println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
+                    println!("{} Timetable", Green.bold().paint("Getting"));
+                    println!("\tLine: {}", Blue.bold().paint(line.name.clone()));
+                    println!("\tRoute Section: {} ...", White.bold().paint(route_section.name.clone()));
                     route_section.timetable = client.get_timetable(&line.id, &route_section.originator, &route_section.destination);
                 }
             });
