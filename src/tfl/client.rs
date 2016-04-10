@@ -98,7 +98,7 @@ impl Client {
         match json::decode::<TimeTableResponse>(&body) {
             Ok(ttresp) =>  Some(ttresp.clone()),
             Err(err) => {
-                println!("Error decoding timetable {}", err);
+                println!("{}: {}", Red.bold().paint("Error decoding timetable"), err);
                 None
             },
         }
@@ -110,7 +110,7 @@ impl Client {
         match json::decode::<Vec<Stop>>(&body) {
             Ok(stops) => stops,
             Err(err) => {
-                println!("Error decoding stops: {}", err);
+                println!("{}: {}", Red.bold().paint("Error decoding stops"), err);
                 Vec::<Stop>::new()
             }
         }
@@ -122,7 +122,7 @@ impl Client {
         match json::decode::<Sequence>(&body) {
             Ok(seq) => Some(seq),
             Err(err) => {
-                println!("Error decoding sequence: {}", err);
+                println!("{}: {}", Red.bold().paint("Error decoding sequence") err);
                 None
             }
         }
