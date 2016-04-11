@@ -122,7 +122,7 @@ impl Client {
         match json::decode::<Sequence>(&body) {
             Ok(seq) => Some(seq),
             Err(err) => {
-                println!("{}: {}", Red.bold().paint("Error decoding sequence") err);
+                println!("{}: {}", Red.bold().paint("Error decoding sequence"), err);
                 None
             }
         }
