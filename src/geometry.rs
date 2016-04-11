@@ -55,7 +55,7 @@ impl Point {
     /// Spheroid distance calculation given earth coordinates as lat/lon values.
     /// Returns the distance in meters.
     pub fn geo_distance(&self, p : &Point) -> f64 {
-        let R = 6371000.0; // metres
+        let r = 6371000.0; // metres
         let lat1 = p.lat();
         let lon1 = p.lon();
         let lat2 = self.lat();
@@ -68,7 +68,7 @@ impl Point {
             sig1.cos() * sig2.cos() *
             (deltalambda/2.0).sin() * (deltalambda/2.0).sin();
         let c = 2.0 * a.sqrt().atan2((1.0-a).sqrt());
-        R * c
+        r * c
     }
 
 }
@@ -171,7 +171,7 @@ impl RouteGraph {
             println!("end point {} to closest {} distance is {} > 2000", p1, end, end_dist);
             return None;
         }
-        let mut visited : HashSet<Point> = HashSet::new();
+        let visited : HashSet<Point> = HashSet::new();
         self.find_path(start, end, &visited)
     }
 

@@ -1,21 +1,6 @@
-use hyper;
-use hyper::header::{Accept, qitem};
-use hyper::mime::{Mime, TopLevel, SubLevel};
-
-use std::path::Path;
-use std::io::{Read, Write};
-use std::sync::Arc;
-use std::fs;
-
-use rustc_serialize::json;
-
-#[derive(Clone)]
-pub struct Client {
-    client : Arc<hyper::Client>,
-    app_id : String,
-    app_key : String,
-    cache_dir : String,
-}
+use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
+use std::fmt;
+use std::collections::HashSet;
 
 #[derive(Clone, Debug, RustcDecodable)]
 pub struct Line {
@@ -144,6 +129,13 @@ impl Line {
     }
 }
 
+impl fmt::Display for Line {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let id: &str = &self.id;
+        write!(f, "{} {}", Green.bold().paint("Line"), Blue.bold().paint(id))
+    }
+}
+
 #[derive(Clone, Debug, RustcDecodable)]
 pub struct Stop {
     pub naptanId : String,
@@ -225,103 +217,14 @@ impl TimeTableResponse {
             false => None,
         }
     }
-}
 
-impl Client {
-    pub fn new() -> Client {
-        let cache_path : &Path = Path::new("./cache");
-        let _ = fs::create_dir(cache_path);
-        return Client{
-            client : Arc::new(hyper::Client::new()),
-            app_id : String::new(),
-            app_key : String::new(),
-            cache_dir : String::from("./cache"),
+    pub fn schedule_names(&self) -> HashSet<String> {
+        if let Some(record) = *&self.first_timetable() {
+            return record.schedules.iter()
+                                   .map(|x| x.name.clone())
+                                   .collect();
         }
-    }
 
-    fn get(&self, endpoint : &str) -> String {
-        match self.cache_get(endpoint) {
-            Some(body) => body,
-            None => self.remote_get(endpoint)
-        }
-    }
-
-    fn remote_get(&self, endpoint : &str) -> String {
-        let req_uri = format!("https://api.tfl.gov.uk{}?app_id={}&app_key={}", endpoint, self.app_id, self.app_key);
-        let mut body = String::new();
-        let mut resp = self.client.get(&req_uri)
-            .header(Accept(vec![
-                           qitem(Mime(TopLevel::Application,
-                                      SubLevel::Ext("json".to_owned()), vec![])),
-            ]))
-            .send().unwrap();
-        resp.read_to_string(&mut body).unwrap();
-        self.cache_put(endpoint, body)
-    }
-
-    fn cache_fname(&self, endpoint : &str) -> String {
-        let fname = String::from(endpoint);
-        let fname0 = fname.replace("/", "_");
-        self.cache_dir.clone() + "/" + &fname0
-    }
-
-    fn cache_put(&self, endpoint : &str, body : String) -> String {
-        let mut f = fs::File::create(self.cache_fname(endpoint)).unwrap();
-        f.write_all(body.as_bytes()).unwrap();
-        body
-    }
-
-    fn cache_get(&self, endpoint : &str) -> Option<String> {
-        let mut body = String::new();
-        match fs::File::open(self.cache_fname(endpoint)) {
-            Ok(ref mut f) => {
-                f.read_to_string(&mut body).unwrap();
-                Some(body)
-            },
-            Err(_) => None,
-        }
-    }
-
-    pub fn get_lines(&self) -> Vec<Line> {
-        let body = self.get("/line/route");
-        json::decode(&body).unwrap()
-    }
-
-    pub fn get_timetable(&self, line_id : &str, originator: &str, destination : &str) -> Option<TimeTableResponse> {
-        let req_uri = format!("/line/{}/timetable/{}/to/{}", line_id, originator, destination);
-        let body = self.get(&req_uri);
-        match json::decode::<TimeTableResponse>(&body) {
-            Ok(ttresp) =>  Some(ttresp.clone()),
-            Err(err) => {
-                println!("Error decoding timetable {}", err);
-                None
-            },
-        }
-    }
-
-    pub fn get_stops(&self, line_id : &str) -> Vec<Stop> {
-        let req_uri = format!("/line/{}/stoppoints", line_id);
-        let body = self.get(&req_uri);
-        match json::decode::<Vec<Stop>>(&body) {
-            Ok(stops) => stops,
-            Err(err) => {
-                println!("Error decoding stops: {}", err);
-                Vec::<Stop>::new()
-            }
-        }
-    }
-
-    pub fn get_sequence(&self, line_id : &str, direction : &str) -> Option<Sequence> {
-        let req_uri = format!("/line/{}/route/sequence/{}", line_id, direction);
-        let body = self.get(&req_uri);
-        match json::decode::<Sequence>(&body) {
-            Ok(seq) => Some(seq),
-            Err(err) => {
-                println!("Error decoding sequence: {}", err);
-                None
-            }
-        }
+        HashSet::new()
     }
 }
-
-

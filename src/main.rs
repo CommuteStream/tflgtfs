@@ -1,76 +1,73 @@
-#![feature(custom_derive)]
-
+#[macro_use] extern crate clap;
+#[macro_use] extern crate log;
+extern crate ansi_term;
+extern crate csv;
+extern crate env_logger;
 extern crate hyper;
+extern crate rand;
 extern crate rustc_serialize;
 extern crate scoped_threadpool;
-extern crate csv;
 
+mod cmd;
+mod format;
 mod geometry;
-mod tfl;
 mod gtfs;
+mod tfl;
 
-use std::sync::Arc;
-use std::collections::HashSet;
+use clap::{Arg, App, SubCommand};
+use format::{OutputFormat};
 
-use scoped_threadpool::Pool;
-
-use tfl::*;
-use gtfs::*;
+fn arg_format<'a, 'b>() -> Arg<'a, 'b> {
+    Arg::with_name("format")
+        .help("Output format")
+        .possible_values(&["gtfs"])
+        .long("format")
+        .value_name("format")
+}
 
 fn main() {
-    let mut pool = Pool::new(10);
-    let client = Arc::new(Client::new());
+    env_logger::init().unwrap();
 
-    // Fetch data
-    let mut lines = client.get_lines();
-    pool.scoped(|scope| {
-        for line in &mut lines {
-            let client = client.clone();
-            scope.execute(move || {
-                line.inbound_sequence = client.get_sequence(&line.id, "inbound");
-                line.outbound_sequence = client.get_sequence(&line.id, "outbound");
-                line.stops = Some(client.get_stops(&line.id));
-                for route_section in &mut line.routeSections {
-                    println!("Getting Timetable for Line: {}, Route Section: {} ...", line.name, route_section.name);
-                    route_section.timetable = client.get_timetable(&line.id, &route_section.originator, &route_section.destination);
-                }
-            });
-        }
-    });
+    let matches = App::new("tfl")
+                      .version(env!("CARGO_PKG_VERSION"))
+                      .about("Tfl consumer")
+                      .subcommand(SubCommand::with_name("fetch-lines")
+                                             .about("Fetch lines from Tfl")
+                                             .arg(arg_format())
+                                             .arg(Arg::with_name("threads")
+                                                      .help("Number of threads. Defaults to 5")
+                                                      .long("threads")
+                                                      .value_name("number"))
+                                             .arg(Arg::with_name("sample")
+                                                      .help("Take a sample of the given size")
+                                                      .long("sample")
+                                                      .value_name("size")))
+                      .subcommand(SubCommand::with_name("transform")
+                                             .about("Transform cached data to the given format")
+                                             .arg(arg_format()
+                                                      .index(1)
+                                                      .required(true))
+                                             .arg(Arg::with_name("threads")
+                                                      .help("Number of threads. Defaults to 5")
+                                                      .long("threads")
+                                                      .value_name("number"))
+                                             .arg(Arg::with_name("sample")
+                                                      .help("Take a sample of the given size")
+                                                      .long("sample")
+                                                      .value_name("size")))
+                      .get_matches();
 
-    // Generate a report
-    let mut line_count = 0;
-    let mut line_ids : HashSet<String> = HashSet::new();
-    let mut route_section_count = 0;
-    let mut route_section_ids: HashSet<String> = HashSet::new();
-    let mut schedule_names: HashSet<String> = HashSet::new();
-    for line in &lines {
-        println!("{}, Duplicate: {}", line.id, line_ids.contains(&line.id));
-        for route_section in &line.routeSections {
-            let has_timetable = match route_section.timetable {
-                Some(ref timetable) => {
-                    for schedule in &timetable.first_timetable().unwrap().schedules {
-                        schedule_names.insert(schedule.name.clone());
-                    }
-                    true
-                },
-                None => false,
-            };
-            let id = route_section_id(&line, &route_section);
-            println!("\t{}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
-            route_section_ids.insert(id.clone());
-            route_section_count += 1;
-        }
-        line_count += 1;
-        line_ids.insert(line.id.clone());
-    }
-    println!("Duplicate Lines: {}, Duplicate Route Sections: {}", line_count-line_ids.len(), route_section_count-route_section_ids.len());
-
-    println!("Schedule Names:");
-    for schedule_name in &schedule_names {
-        println!("\t{}", schedule_name);
+    if let Some(ref matches) = matches.subcommand_matches("fetch-lines") {
+        let format = value_t!(matches, "format", OutputFormat).unwrap_or(OutputFormat::None);
+        let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
+        let sample_size = value_t!(matches, "sample", usize).ok();
+        cmd::fetch_lines(format, thread_number, sample_size);
     }
 
-    // Generate CSV files from fetched data
-    write_gtfs(&lines);
+    if let Some(ref matches) = matches.subcommand_matches("transform") {
+        let format = value_t!(matches, "format", OutputFormat).unwrap_or_else(|e| e.exit());
+        let thread_number = value_t!(matches, "threads", u32).unwrap_or(5);
+        let sample_size = value_t!(matches, "sample", usize).ok();
+        cmd::transform(format, thread_number, sample_size);
+    }
 }
