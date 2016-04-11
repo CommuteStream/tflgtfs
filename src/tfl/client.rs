@@ -1,9 +1,8 @@
-use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
+use ansi_term::Colour::Red;
 use hyper::header::{Accept, qitem};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use hyper;
 use rustc_serialize::json;
-use std::collections::HashSet;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;

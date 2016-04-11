@@ -1,5 +1,5 @@
 use rand;
-use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
+use ansi_term::Colour::{Green, Red, White, Blue};
 use rand::distributions::{IndependentSample, Range};
 use scoped_threadpool::Pool;
 use std::collections::HashSet;

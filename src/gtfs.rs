@@ -323,7 +323,7 @@ fn write_shape_path(wtr : &mut csv::Writer<File>, shape_id : &String, path : &Ve
     }
 }
 
-fn write_shape(wtr : &mut csv::Writer<File>, shape_id : &String, route: &Route, section : &RouteSection, stops : &HashMap<String, (f64, f64)>, graph : &RouteGraph) {
+fn write_shape(wtr : &mut csv::Writer<File>, shape_id : &String, _route: &Route, section : &RouteSection, stops : &HashMap<String, (f64, f64)>, graph : &RouteGraph) {
     match stops.get(&section.originator) {
         Some(&(start_lat, start_lon)) => {
             let start_pt = Point::new(start_lat, start_lon);

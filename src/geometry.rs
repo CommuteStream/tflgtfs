@@ -15,7 +15,7 @@ const PRECISION : f64 = 10000.0;
 /// behavior revolving around NaN float values. For example, what is the boolean
 /// result of 0.0 > NaN ? Its undefined, so therefore > is not implemented by
 /// Rust Proper! Perhaps they'll fix this massive inconvienence in the future.
-/// TODO use floats 
+/// TODO use floats
 #[derive(PartialEq, Eq, Clone, Debug, Hash, Copy)]
 pub struct Point {
     lat : i64,
@@ -119,9 +119,7 @@ impl RouteGraph {
     /// Add many paths
     pub fn add_paths(&mut self, paths : &Vec<Path>) {
         for path in paths {
-            for path in paths {
-                self.add_path(path);
-            }
+            self.add_path(path);
         }
     }
 

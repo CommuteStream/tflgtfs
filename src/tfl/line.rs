@@ -1,4 +1,4 @@
-use ansi_term::Colour::{Green, Yellow, Red, White, Blue};
+use ansi_term::Colour::{Green, Blue};
 use std::fmt;
 use std::collections::HashSet;
 
