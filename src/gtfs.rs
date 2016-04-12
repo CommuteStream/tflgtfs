@@ -1,9 +1,11 @@
 use csv;
 
-use std::path::Path;
+use crypto::digest::Digest;
+use crypto::md5::Md5;
 use std::collections::{HashSet, HashMap};
 use std::fs::File;
 use std::fs;
+use std::path::Path;
 
 use tfl::line::{Line, TimeTable, RouteSection, Schedule, KnownJourney, StationInterval};
 use geometry::{linestrings_to_paths, RouteGraph, Point};
@@ -180,7 +182,12 @@ fn write_calendar(gtfs_path : &str) {
 
 fn trip_id(line : &Line, section : &RouteSection, schedule : &Schedule, journey : &KnownJourney) -> String {
     let tfmt = time_offset_fmt(journey, 0.0);
-    format!("{} {} to {} scheduled {} departs {}", line.id, section.originator, section.destination, schedule.name, tfmt)
+    let input = line.id.to_string() + &section.originator + &section.destination + &schedule.name + &tfmt;
+    let mut hasher = Md5::new();
+
+    hasher.input_str(&input);
+
+    hasher.result_str()
 }
 
 fn write_route_section_trips(wtr : &mut csv::Writer<File>, shape_id : &String, line : &Line, section : &RouteSection) {

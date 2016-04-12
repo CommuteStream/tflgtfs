@@ -5,11 +5,12 @@ authors = ["Tom Burdick <thomas.burdick@gmail.com>"]
 
 [dependencies]
 ansi_term = "0.7"
-rand = "0.3"
 clap = "2.2"
 csv = "0.14"
 env_logger = "0.3"
 hyper = "0.8"
 log = "0.3"
+rand = "0.3"
+rust-crypto = "0.2"
 rustc-serialize = "0.3"
 scoped_threadpool = "0.1"
