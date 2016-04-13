@@ -2,7 +2,7 @@ use ansi_term::Colour::Red;
 use hyper::header::{Accept, qitem};
 use hyper::mime::{Mime, TopLevel, SubLevel};
 use hyper;
-use rustc_serialize::json;
+use serde_json;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -81,20 +81,20 @@ impl Client {
     pub fn get_cached_lines(&self) -> Vec<Line> {
         let body = self.cache_get("/line/route");
         match body {
-            Some(x) => json::decode(&x).unwrap(),
+            Some(x) => serde_json::from_str(&x).unwrap(),
             None => vec![]
         }
     }
 
     pub fn get_lines(&self) -> Vec<Line> {
         let body = self.get("/line/route");
-        json::decode(&body).unwrap()
+        serde_json::from_str(&body).unwrap()
     }
 
     pub fn get_timetable(&self, line_id : &str, originator: &str, destination : &str) -> Option<TimeTableResponse> {
         let req_uri = format!("/line/{}/timetable/{}/to/{}", line_id, originator, destination);
         let body = self.get(&req_uri);
-        match json::decode::<TimeTableResponse>(&body) {
+        match serde_json::from_str::<TimeTableResponse>(&body) {
             Ok(ttresp) =>  Some(ttresp.clone()),
             Err(err) => {
                 println!("{}: {}", Red.bold().paint("Error decoding timetable"), err);
@@ -106,7 +106,7 @@ impl Client {
     pub fn get_stops(&self, line_id : &str) -> Vec<Stop> {
         let req_uri = format!("/line/{}/stoppoints", line_id);
         let body = self.get(&req_uri);
-        match json::decode::<Vec<Stop>>(&body) {
+        match serde_json::from_str::<Vec<Stop>>(&body) {
             Ok(stops) => stops,
             Err(err) => {
                 println!("{}: {}", Red.bold().paint("Error decoding stops"), err);
@@ -118,7 +118,7 @@ impl Client {
     pub fn get_sequence(&self, line_id : &str, direction : &str) -> Option<Sequence> {
         let req_uri = format!("/line/{}/route/sequence/{}", line_id, direction);
         let body = self.get(&req_uri);
-        match json::decode::<Sequence>(&body) {
+        match serde_json::from_str::<Sequence>(&body) {
             Ok(seq) => Some(seq),
             Err(err) => {
                 println!("{}: {}", Red.bold().paint("Error decoding sequence"), err);

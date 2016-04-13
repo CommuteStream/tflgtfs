@@ -1,3 +1,6 @@
+#![feature(custom_derive, plugin)]
+#![plugin(serde_macros)]
+
 #[macro_use] extern crate clap;
 #[macro_use] extern crate log;
 extern crate ansi_term;
@@ -6,8 +9,9 @@ extern crate csv;
 extern crate env_logger;
 extern crate hyper;
 extern crate rand;
-extern crate rustc_serialize;
 extern crate scoped_threadpool;
+extern crate serde;
+extern crate serde_json;
 
 mod cmd;
 mod format;

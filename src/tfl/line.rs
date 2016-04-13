@@ -2,15 +2,17 @@ use ansi_term::Colour::{Green, Blue};
 use std::fmt;
 use std::collections::HashSet;
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Line {
-    pub id : String,
-    pub name : String,
-    pub modeName : String,
-    pub routeSections : Vec<RouteSection>,
-    pub stops : Option<Vec<Stop>>,
-    pub inbound_sequence : Option<Sequence>,
-    pub outbound_sequence : Option<Sequence>,
+    pub id: String,
+    pub name: String,
+    #[serde(rename="modeName")]
+    pub mode_name: String,
+    #[serde(rename="routeSections")]
+    pub route_sections: Vec<RouteSection>,
+    pub stops: Option<Vec<Stop>>,
+    pub inbound_sequence: Option<Sequence>,
+    pub outbound_sequence: Option<Sequence>,
 }
 
 /// Default color string, use null so the importer can choose
@@ -115,7 +117,7 @@ impl Line {
 
     /// The Line's Color based on the TFL colors on tfl.gov.uk
     pub fn color(&self) -> &str {
-        match &self.modeName[..] {
+        match &self.mode_name[..] {
             "dlr" => "00AFAD",
             "overground" => "E86A10",
             "tflrail" => "0019A8",
@@ -136,78 +138,86 @@ impl fmt::Display for Line {
     }
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Stop {
-    pub naptanId : String,
-    pub commonName : String,
-    pub lat : f64,
-    pub lon : f64,
-    pub children : Vec<Stop>,
+    #[serde(rename="naptanId")]
+    pub naptan_id: String,
+    #[serde(rename="commonName")]
+    pub common_name: String,
+    pub lat: f64,
+    pub lon: f64,
+    pub children: Vec<Stop>,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct RouteSection {
-    pub name : String,
-    pub direction : String,
-    pub originator : String,
-    pub destination : String,
-    pub timetable : Option<TimeTableResponse>,
+    pub name: String,
+    pub direction: String,
+    pub originator: String,
+    pub destination: String,
+    pub timetable: Option<TimeTableResponse>,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Interval {
-    pub stopId : String,
-    pub timeToArrival: f64,
+    #[serde(rename="stopId")]
+    pub stop_id: String,
+    #[serde(rename="timeToArrival")]
+    pub time_to_arrival: f64,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct StationInterval {
-    pub id : i64,
-    pub intervals : Vec<Interval>
+    pub id: i64,
+    pub intervals: Vec<Interval>
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct KnownJourney {
-    pub intervalId : i64,
-    pub hour : String,
-    pub minute : String,
+    #[serde(rename="intervalId")]
+    pub interval_id: i64,
+    pub hour: String,
+    pub minute: String,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
-    pub name : String,
-    pub knownJourneys : Vec<KnownJourney>,
+    pub name: String,
+    #[serde(rename="knownJourneys")]
+    pub known_journeys: Vec<KnownJourney>,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TimeTable {
-    pub stationIntervals : Vec<StationInterval>,
-    pub schedules : Vec<Schedule>,
+    #[serde(rename="stationIntervals")]
+    pub station_intervals: Vec<StationInterval>,
+    pub schedules: Vec<Schedule>,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct RoutesTimeTables {
-    pub routes : Vec<TimeTable>,
+    pub routes: Vec<TimeTable>,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Station {
-    pub id : String,
-    pub name : String,
-    pub lat : f64,
-    pub lon : f64,
+    pub id: String,
+    pub name: String,
+    pub lat: f64,
+    pub lon: f64,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct TimeTableResponse {
-    pub stations : Vec<Station>,
-    pub stops : Vec<Station>,
-    pub timetable : RoutesTimeTables,
+    pub stations: Vec<Station>,
+    pub stops: Vec<Station>,
+    pub timetable: RoutesTimeTables,
 }
 
-#[derive(Clone, Debug, RustcDecodable)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Sequence {
-    pub lineStrings : Vec<String>,
+    #[serde(rename="lineStrings")]
+    pub line_strings: Vec<String>,
 }
 
 impl TimeTableResponse {

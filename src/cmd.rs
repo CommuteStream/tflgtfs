@@ -1,6 +1,6 @@
-use rand;
 use ansi_term::Colour::{Green, Red, White, Blue};
 use rand::distributions::{IndependentSample, Range};
+use rand;
 use scoped_threadpool::Pool;
 use std::collections::HashSet;
 use std::process;
@@ -72,7 +72,7 @@ fn load_lines(data_source: DataSource, thread_number: u32, sample_size: Option<u
                 line.inbound_sequence = client.get_sequence(&line.id, "inbound");
                 line.outbound_sequence = client.get_sequence(&line.id, "outbound");
                 line.stops = Some(client.get_stops(&line.id));
-                for route_section in &mut line.routeSections {
+                for route_section in &mut line.route_sections {
                     println!("{} Timetable", Green.bold().paint("Getting"));
                     println!("\tLine: {}", Blue.bold().paint(line.name.clone()));
                     println!("\tRoute Section: {} ...", White.bold().paint(route_section.name.clone()));
@@ -100,7 +100,7 @@ fn transform_gtfs(lines: Vec<Line>) {
 
         println!("{}; Duplicate: {}", line, is_duplicated);
 
-        for route_section in &line.routeSections {
+        for route_section in &line.route_sections {
             let has_timetable = match route_section.timetable {
                 Some(ref timetable) => {
                     let names = timetable.schedule_names();

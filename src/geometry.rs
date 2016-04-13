@@ -1,9 +1,6 @@
+use serde_json;
 use std::collections::{HashSet, HashMap};
-
-use rustc_serialize::json;
-
 use std::f64::consts::PI;
-
 use std::fmt;
 
 
@@ -18,8 +15,8 @@ const PRECISION : f64 = 10000.0;
 /// TODO use floats
 #[derive(PartialEq, Eq, Clone, Debug, Hash, Copy)]
 pub struct Point {
-    lat : i64,
-    lon : i64,
+    lat: i64,
+    lon: i64,
 }
 
 /// Degress to Radians
@@ -37,8 +34,8 @@ impl Point {
     /// New integer stored Point from floating point lat/lon coordinates
     pub fn new(lat : f64, lon : f64) -> Point {
         Point {
-            lat : (lat*PRECISION).floor() as i64,
-            lon : (lon*PRECISION).floor() as i64,
+            lat: (lat*PRECISION).floor() as i64,
+            lon: (lon*PRECISION).floor() as i64,
         }
     }
 
@@ -78,9 +75,9 @@ pub type Path = Vec<Point>;
 
 /// Maintains a sparse routing graph
 pub struct RouteGraph {
-    vertices : HashSet<Point>,
-    edges : HashMap<Point, Vec<Point>>,
-    paths : HashMap<(Point, Point), Path>,
+    vertices: HashSet<Point>,
+    edges: HashMap<Point, Vec<Point>>,
+    paths: HashMap<(Point, Point), Path>,
 }
 
 /// Convert the TFL lineStrings attribute to a simple flat vectory of paths.
@@ -89,10 +86,10 @@ pub struct RouteGraph {
 pub fn linestrings_to_paths(line_strings : &Vec<String>) -> Vec<Path> {
     let mut paths : Vec<Path> = Vec::new();
     for line_string in line_strings {
-        match json::decode::<Vec<(f64, f64)>>(&line_string) {
+        match serde_json::from_str::<Vec<(f64, f64)>>(&line_string) {
             Ok(raw_path) => paths.push(raw_path.iter().map(|&(lon, lat)| Point::new(lat, lon)).collect()),
             Err(err) => {
-                match json::decode::<Vec<Vec<(f64, f64)>>>(&line_string) {
+                match serde_json::from_str::<Vec<Vec<(f64, f64)>>>(&line_string) {
                     Ok(raw_paths) => {
                         for raw_path in raw_paths {
                             paths.push(raw_path.iter().map(|&(lon, lat)| Point::new(lat, lon)).collect());
@@ -110,9 +107,9 @@ impl RouteGraph {
     /// New Route Graph
     pub fn new() -> RouteGraph {
         RouteGraph {
-            vertices : HashSet::new(),
-            edges : HashMap::new(),
-            paths : HashMap::new(),
+            vertices: HashSet::new(),
+            edges: HashMap::new(),
+            paths: HashMap::new(),
         }
     }
 

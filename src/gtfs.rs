@@ -11,19 +11,19 @@ use tfl::line::{Line, TimeTable, RouteSection, Schedule, KnownJourney, StationIn
 use geometry::{linestrings_to_paths, RouteGraph, Point};
 
 struct Route<'a> {
-    line : &'a Line,
-    inbound_graph : RouteGraph,
-    outbound_graph : RouteGraph,
+    line: &'a Line,
+    inbound_graph: RouteGraph,
+    outbound_graph: RouteGraph,
 }
 
 impl<'a> Route<'a> {
     fn new(line : &'a Line) -> Route {
         let inbound_paths = match line.inbound_sequence.as_ref() {
-            Some(ref seq) => linestrings_to_paths(&seq.lineStrings),
+            Some(ref seq) => linestrings_to_paths(&seq.line_strings),
             None => vec![],
         };
         let outbound_paths = match line.outbound_sequence.as_ref() {
-            Some(ref seq) => linestrings_to_paths(&seq.lineStrings),
+            Some(ref seq) => linestrings_to_paths(&seq.line_strings),
             None => vec![],
         };
         let mut inbound_graph = RouteGraph::new();
@@ -39,7 +39,7 @@ impl<'a> Route<'a> {
 }
 
 fn route_type(line : &Line) -> &'static str {
-    match &line.modeName[..] {
+    match &line.mode_name[..] {
         "dlr" | "tram" => "0",
         "tube" | "overground" => "1",
         "national-rail" | "tflrail" => "2",
@@ -47,7 +47,7 @@ fn route_type(line : &Line) -> &'static str {
         "river-tour" | "river-bus" => "4",
         "cable-car" => "5",
         _ => {
-            println!("Missing line modeName match: {}", line.modeName);
+            println!("Missing line mode_name match: {}", line.mode_name);
             ""
         },
     }
@@ -87,24 +87,24 @@ fn write_stops(gtfs_path : &str, routes : &Vec<Route>) -> HashMap<String, (f64, 
     for route in routes {
         let stops = route.line.stops.as_ref().unwrap();
         for stop in stops {
-            match written_stops.contains_key(&stop.naptanId) {
+            match written_stops.contains_key(&stop.naptan_id) {
                 true => (),
                 false => {
-                    wtr.encode((stop.naptanId.clone(), stop.commonName.clone(), stop.lat, stop.lon)).unwrap();
-                    written_stops.insert(stop.naptanId.clone(), (stop.lat, stop.lon));
+                    wtr.encode((stop.naptan_id.clone(), stop.common_name.clone(), stop.lat, stop.lon)).unwrap();
+                    written_stops.insert(stop.naptan_id.clone(), (stop.lat, stop.lon));
                     for child in &stop.children {
-                        match written_stops.contains_key(&child.naptanId) {
+                        match written_stops.contains_key(&child.naptan_id) {
                             true => (),
                             false => {
-                                wtr.encode((child.naptanId.clone(), child.commonName.clone(), stop.lat, stop.lon)).unwrap();
-                                written_stops.insert(child.naptanId.clone(), (stop.lat, stop.lon));
+                                wtr.encode((child.naptan_id.clone(), child.common_name.clone(), stop.lat, stop.lon)).unwrap();
+                                written_stops.insert(child.naptan_id.clone(), (stop.lat, stop.lon));
                             },
                         }
                     }
                 },
             };
         }
-        for section in &route.line.routeSections {
+        for section in &route.line.route_sections {
             match section.timetable {
                 Some(ref timetable) => {
                     for station in &timetable.stations {
@@ -206,7 +206,7 @@ fn write_route_section_trips(wtr : &mut csv::Writer<File>, shape_id : &String, l
                 None => (),
                 Some(ref x) => {
                     for schedule in &x.schedules {
-                        for journey in &schedule.knownJourneys {
+                        for journey in &schedule.known_journeys {
                             let id = trip_id(line, section, schedule, journey);
                             match written_trips.contains(&id) {
                                 true => (),
@@ -234,7 +234,7 @@ fn write_trips(gtfs_path : &str, routes : &Vec<Route>) {
     wtr.encode(("route_id", "service_id", "trip_id", "direction", "shape_id")).unwrap();
     for route in routes {
         let mut written_route_sections = HashSet::<String>::new();
-        let route_sections = &route.line.routeSections;
+        let route_sections = &route.line.route_sections;
         for route_section in route_sections {
             let id = route_section_id(route.line, route_section);
             match written_route_sections.contains(&id) {
@@ -264,8 +264,8 @@ fn write_journey_stop_times(wtr : &mut csv::Writer<File>, line : &Line, section 
     wtr.encode((&trip_id, &section.originator, stop_seq, &dep_time, &dep_time)).unwrap();
     for stop in &interval.intervals {
         stop_seq += 1;
-        let dep_time = time_offset_fmt(journey, stop.timeToArrival);
-        wtr.encode((&trip_id, &stop.stopId, stop_seq, &dep_time, &dep_time)).unwrap();
+        let dep_time = time_offset_fmt(journey, stop.time_to_arrival);
+        wtr.encode((&trip_id, &stop.stop_id, stop_seq, &dep_time, &dep_time)).unwrap();
     }
 }
 
@@ -281,10 +281,10 @@ fn write_route_section_stop_times(wtr : &mut csv::Writer<File>, line : &Line, se
             let record: Option<&TimeTable> = timetable.first_timetable();
 
             if let Some(ref datum) = record {
-                let intervals = intervals(&datum.stationIntervals);
+                let intervals = intervals(&datum.station_intervals);
                 for schedule in &datum.schedules {
-                    for journey in &schedule.knownJourneys {
-                        intervals.get(&journey.intervalId)
+                    for journey in &schedule.known_journeys {
+                        intervals.get(&journey.interval_id)
                                  .map(|interval| {
                                     let id = trip_id(line, section, schedule, journey);
 
@@ -308,7 +308,7 @@ fn write_stop_times(gtfs_path : &str, routes : &Vec<Route>) {
     wtr.encode(("trip_id", "stop_id", "stop_sequence", "arrival_time", "departure_time")).unwrap();
     for route in routes {
         let mut written_route_sections = HashSet::<String>::new();
-        let route_sections = &route.line.routeSections;
+        let route_sections = &route.line.route_sections;
         for route_section in route_sections {
             let id = route_section_id(route.line, route_section);
             match written_route_sections.contains(&id) {
@@ -358,7 +358,7 @@ fn write_shapes(gtfs_path : &str, routes : &Vec<Route>, stops : &HashMap<String,
     wtr.encode(("shape_id", "shape_pt_lat", "shape_pt_lon", "shape_pt_sequence")).unwrap();
     for route in routes {
         let mut written_shapes = HashSet::<String>::new();
-        let route_sections = &route.line.routeSections;
+        let route_sections = &route.line.route_sections;
         for route_section in route_sections {
             let shape_id = route_section_id(route.line, route_section);
             match written_shapes.contains(&shape_id) {
