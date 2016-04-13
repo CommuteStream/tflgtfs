@@ -177,24 +177,24 @@ impl RouteGraph {
     // infinitely recursing in circles.
     fn find_path(&self, p0 : Point, p1 : Point, visited : &HashSet<Point>) -> Option<Path> {
         match self.edges.get(&p0) {
-            Some(to_vertices) => match visited.contains(&p0) {
-                true => None,
-                false => {
+            Some(to_vertices) => {
+                if visited.contains(&p0) {
+                    None
+                } else {
                     for next in to_vertices {
                         if next.clone() == p1 {
                             return Some(self.paths.get(&(p0, next.clone())).unwrap().clone());
                         }
                         let mut visited0 = visited.clone();
                         visited0.insert(next.clone());
-                        match self.find_path(next.clone(), p1, &visited0) {
-                            Some(path) => {
-                                return Some(vec![&(self.paths.get(&(p0, next.clone())).unwrap())[..], &path[..]].concat());
-                            },
-                            None => (),
+
+                        if let Some(path) = self.find_path(next.clone(), p1, &visited0) {
+                            return Some(vec![&(self.paths.get(&(p0, next.clone())).unwrap())[..], &path[..]].concat());
                         }
                     }
+
                     None
-                },
+                }
             },
             None => None,
         }
