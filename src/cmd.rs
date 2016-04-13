@@ -93,9 +93,10 @@ fn transform_gtfs(lines: Vec<Line>) {
     let mut schedule_names: HashSet<String> = HashSet::new();
 
     for line in &lines {
-        let is_duplicated = match line_ids.contains(&line.id) {
-            true => Red.paint("yes"),
-            false => Green.paint("no"),
+        let is_duplicated = if line_ids.contains(&line.id) {
+            Red.paint("yes")
+        } else {
+            Green.paint("no")
         };
 
         println!("{}; Duplicate: {}", line, is_duplicated);

@@ -15,19 +15,20 @@ pub enum DataSource {
     Cache
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Client {
-    client : Arc<hyper::Client>,
-    app_id : String,
-    app_key : String,
-    cache_dir : String,
+    client: Arc<hyper::Client>,
+    app_id: String,
+    app_key: String,
+    cache_dir: String,
 }
 
 impl Client {
     pub fn new() -> Client {
-        let cache_path : &Path = Path::new("./cache");
+        let cache_path: &Path = Path::new("./cache");
         let _ = fs::create_dir(cache_path);
-        return Client{
+
+        Client {
             client : Arc::new(hyper::Client::new()),
             app_id : String::new(),
             app_key : String::new(),

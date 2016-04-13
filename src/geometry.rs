@@ -4,13 +4,13 @@ use std::f64::consts::PI;
 use std::fmt;
 
 
-const PRECISION : f64 = 10000.0;
+const PRECISION: f64 = 10000.0;
 
 /// Point containing latitude and longitude values as integers.
 /// Integers are used here due to Rust itself not providing some basic
 /// floating point functionality at the moment. All due to the undefined
-/// behavior revolving around NaN float values. For example, what is the boolean
-/// result of 0.0 > NaN ? Its undefined, so therefore > is not implemented by
+/// behavior revolving around `NaN` float values. For example, what is the boolean
+/// result of `0.0 > NaN` ? Its undefined, so therefore > is not implemented by
 /// Rust Proper! Perhaps they'll fix this massive inconvienence in the future.
 /// TODO use floats
 #[derive(PartialEq, Eq, Clone, Debug, Hash, Copy)]

@@ -43,8 +43,7 @@ impl Line {
     /// Tram Color
     fn tram_color(&self) -> &str {
         match &self.name[..] {
-            "Tram 1" => "C6D834",
-            "Tram 2" => "C6D834",
+            "Tram 1" | "Tram 2" => "C6D834",
             "Tram 3" => "79C23F",
             "Tram 4" => "336B14",
             _ => {
@@ -221,10 +220,11 @@ pub struct Sequence {
 }
 
 impl TimeTableResponse {
-   pub fn first_timetable(&self) -> Option<&TimeTable> {
-        match self.timetable.routes.len() > 0 {
-            true => Some(&self.timetable.routes[0]),
-            false => None,
+    pub fn first_timetable(&self) -> Option<&TimeTable> {
+        if self.timetable.routes.is_empty() {
+            Some(&self.timetable.routes[0])
+        } else {
+            None
         }
     }
 
