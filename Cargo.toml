@@ -6,6 +6,7 @@ authors = ["Tom Burdick <thomas.burdick@gmail.com>"]
 [dependencies]
 ansi_term = "0.7"
 clap = "2.2"
+clippy = "*"
 csv = "0.14"
 env_logger = "0.3"
 hyper = "0.8"

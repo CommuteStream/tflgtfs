@@ -1,5 +1,7 @@
 #![feature(custom_derive, plugin)]
 #![plugin(serde_macros)]
+#![plugin(clippy)]
+
 
 #[macro_use] extern crate clap;
 #[macro_use] extern crate log;
