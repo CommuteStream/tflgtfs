@@ -130,8 +130,8 @@ impl RouteGraph {
         self.vertices.insert(*last);
 
         // add bidirectional edges
-        self.edges.entry(*first).or_insert(vec![*last]).push(*last);
-        self.edges.entry(*last).or_insert(vec![*first]).push(*first);
+        self.edges.entry(*first).or_insert_with(|| vec![*last]).push(*last);
+        self.edges.entry(*last).or_insert_with(|| vec![*first]).push(*first);
 
         // add paths
         self.paths.insert((*first, *last), path.clone());
