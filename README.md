@@ -22,6 +22,7 @@ OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include cargo build --release
 
 You will find the binary in `./target/release/`.
 
+
 ## Usage
 
 Check the help `./target/release/tflgtfs help` for details.
@@ -38,6 +39,12 @@ You can do it in one shot via:
 You will find the resulting GTFS files inside `./gtfs`.
 
 
+## Development
+
+If you intend to improve this tool please install [Cargo Clippy][cargo-clippy]
+to make sure your changes are aligned with our code conventions.
+
+
 ## License
 
 See [License](./LICENSE).
@@ -46,3 +53,4 @@ See [License](./LICENSE).
 [tfl-cli]: https://github.com/CommuteStream/tflgtfs/
 [tfl-api]: https://api.tfl.gov.uk/
 [gtfs]: https://developers.google.com/transit/gtfs/
+[cargo-clippy]: https://crates.io/crates/cargo-clippy
