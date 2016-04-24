@@ -44,8 +44,12 @@ You will find the resulting GTFS files inside `./gtfs`.
 
 ## Development
 
-If you intend to improve this tool please install [Cargo Clippy][cargo-clippy]
-to make sure your changes are aligned with our code conventions.
+When developing on nightly build it using the following command to actually
+benefit from linting and Serde macro:
+
+```
+cargo build --features nightly --no-default-features
+```
 
 
 ## License
