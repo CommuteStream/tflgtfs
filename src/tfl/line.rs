@@ -1,4 +1,4 @@
-use ansi_term::Colour::{Green, Blue};
+use ansi_term::Colour::{Green, Blue, Red};
 use std::fmt;
 use std::collections::HashSet;
 
@@ -211,6 +211,8 @@ pub struct TimeTableResponse {
     pub stations: Vec<Station>,
     pub stops: Vec<Station>,
     pub timetable: RoutesTimeTables,
+    #[serde(rename="statusErrorMessage")]
+    pub status_error_message: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -221,10 +223,11 @@ pub struct Sequence {
 
 impl TimeTableResponse {
     pub fn first_timetable(&self) -> Option<&TimeTable> {
-        if self.timetable.routes.is_empty() {
-            Some(&self.timetable.routes[0])
-        } else {
+        if let Some(ref message) = self.status_error_message {
+            println!("{} {}", Red.bold().paint("Error:"), message);
             None
+        } else {
+            Some(&self.timetable.routes[0])
         }
     }
 

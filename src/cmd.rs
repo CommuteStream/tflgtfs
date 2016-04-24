@@ -112,7 +112,7 @@ fn transform_gtfs(lines: Vec<Line>) {
             };
 
             let id = route_section_id(&line, &route_section);
-            println!("\t{}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
+            println!("     {}, Has Timetable: {}, Duplicate: {}", id, has_timetable, route_section_ids.contains(&id));
             route_section_ids.insert(id.clone());
             route_section_count += 1;
         }
