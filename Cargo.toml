@@ -14,10 +14,10 @@ syntex = "*"
 
 [dependencies]
 ansi_term = "0.7"
-clap = "2.2"
+clap = "2.3"
 csv = "0.14"
 env_logger = "0.3"
-hyper = "0.8"
+hyper = "0.9"
 log = "0.3"
 rand = "0.3"
 rust-crypto = "0.2"
