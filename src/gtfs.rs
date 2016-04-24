@@ -184,7 +184,7 @@ fn trip_id(line: &Line, section: &RouteSection, schedule: &Schedule, journey: &K
     hasher.result_str()
 }
 
-fn write_route_section_trips(wtr: &mut csv::Writer<File>, shape_id: &String, line: &Line, section: &RouteSection) {
+fn write_route_section_trips(wtr: &mut csv::Writer<File>, shape_id: &str, line: &Line, section: &RouteSection) {
     let mut written_trips : HashSet<String> = HashSet::new();
     let direction = match &section.direction[..] {
         "inbound" => "1".to_owned(),
@@ -305,13 +305,13 @@ fn write_stop_times(gtfs_path: &str, routes: &[Route]) {
     }
 }
 
-fn write_shape_path(wtr: &mut csv::Writer<File>, shape_id: &String, path: &[Point]) {
+fn write_shape_path(wtr: &mut csv::Writer<File>, shape_id: &str, path: &[Point]) {
     for (seq, item) in path.iter().enumerate() {
         wtr.encode((shape_id, item.lat(), item.lon(), seq)).unwrap();
     }
 }
 
-fn write_shape(wtr: &mut csv::Writer<File>, shape_id: &String, _route: &Route, section: &RouteSection, stops: &HashMap<String, (f64, f64)>, graph: &RouteGraph) {
+fn write_shape(wtr: &mut csv::Writer<File>, shape_id: &str, _route: &Route, section: &RouteSection, stops: &HashMap<String, (f64, f64)>, graph: &RouteGraph) {
     if let Some(&(start_lat, start_lon)) = stops.get(&section.originator) {
         let start_pt = Point::new(start_lat, start_lon);
 
