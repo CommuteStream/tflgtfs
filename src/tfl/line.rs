@@ -213,6 +213,8 @@ pub struct TimeTableResponse {
     pub timetable: RoutesTimeTables,
     #[serde(rename="statusErrorMessage")]
     pub status_error_message: Option<String>,
+    #[serde(rename="lineId")]
+    line_id: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -224,7 +226,7 @@ pub struct Sequence {
 impl TimeTableResponse {
     pub fn first_timetable(&self) -> Option<&TimeTable> {
         if let Some(ref message) = self.status_error_message {
-            println!("{} {}", Red.bold().paint("Error:"), message);
+            println!("{} (line {}): {}", Red.bold().paint("Error"), Blue.bold().paint(self.line_id.clone()), message);
             None
         } else {
             Some(&self.timetable.routes[0])
