@@ -3,6 +3,9 @@
 This simple Rust CLI allows you to fetch data from the
 [Tfl Unified API][tfl-api] and transform it to [GTFS][gtfs].
 
+[![Build Status](https://travis-ci.org/CommuteStream/tflgtfs.svg?branch=master)](https://travis-ci.org/CommuteStream/tflgtfs)
+[![Clippy Linting Result](https://clippy.bashy.io/github/CommuteStream/tflgtfs/master/badge.svg)](https://clippy.bashy.io/github/CommuteStream/tflgtfs/change-to-serde/log)
+
 
 ## Install
 
