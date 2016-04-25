@@ -61,5 +61,3 @@ See [License](./LICENSE).
 [tfl-api]: https://api.tfl.gov.uk/
 [gtfs]: https://developers.google.com/transit/gtfs/
 [cargo-clippy]: https://crates.io/crates/cargo-clippy
-
-![alt travis-ci](https://travis-ci.org/CommuteStream/tflgtfs.svg?branch=master)
