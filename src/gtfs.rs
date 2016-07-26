@@ -240,7 +240,7 @@ fn time_offset_fmt(journey: &KnownJourney, offset: f64) -> String {
     let minute_offset : u64 = dep_minute + rounded_offset;
     let hour : u64 = dep_hour + minute_offset / 60;
     let minute : u64 = minute_offset % 60;
-    format!("{:02}:{:02}", hour, minute)
+    format!("{:02}:{:02}:00", hour, minute)
 }
 
 fn write_journey_stop_times(wtr: &mut csv::Writer<File>, line: &Line, section: &RouteSection, schedule: &Schedule, journey: &KnownJourney, interval: &StationInterval) {
