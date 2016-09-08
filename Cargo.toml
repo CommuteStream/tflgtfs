@@ -10,7 +10,7 @@ nightly = ["serde_macros", "clippy"]
 
 [build-dependencies]
 serde_codegen = { version = "0.7", optional = true }
-syntex = "*"
+syntex = "0.39"
 
 [dependencies]
 ansi_term = "0.7"
