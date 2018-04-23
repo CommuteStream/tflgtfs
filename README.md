@@ -15,6 +15,10 @@ Clone [the repository][tfl-cli] and compile:
 cargo build --release
 ```
 
+You will find the binary in `./target/release/`.
+
+### OSX Users
+
 *WARNING*: If you compile under OSX 10.11 you might need to specify the
 OpenSSL include path.  For example, having OpenSSL installed via Homebrew,
 the command is:
@@ -23,7 +27,13 @@ the command is:
 OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include cargo build --release
 ```
 
-You will find the binary in `./target/release/`.
+### Arch Linux Users
+*WARNING*: OpenSSL versions `> 1.0` do not work. You'll need to install
+the [`openssl-1.0`](https://www.archlinux.org/packages/extra/x86_64/openssl-1.0/) package in the `extra` repository and compile with the following command ([thanks to @Yamakaky](https://github.com/sfackler/rust-openssl/issues/631#issuecomment-315404620)):
+
+```sh
+OPENSSL_INCLUDE_DIR=/usr/include/openssl-1.0 OPENSSL_LIB_DIR=/usr/lib/openssl-1.0 cargo build --release
+```
 
 
 ## Usage
