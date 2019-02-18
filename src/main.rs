@@ -5,7 +5,6 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
 #[macro_use] extern crate clap;
-#[macro_use] extern crate log;
 extern crate ansi_term;
 extern crate crypto;
 extern crate csv;

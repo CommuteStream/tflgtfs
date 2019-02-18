@@ -35,7 +35,7 @@ fn sample<T: Clone>(xs: Vec<T>, size: usize) -> Vec<T> {
 
     if size > len { return xs }
 
-    let between = Range::new(0usize, (len - size));
+    let between = Range::new(0usize, len - size);
     let mut rng = rand::thread_rng();
     let seed = between.ind_sample(&mut rng);
     let lower = seed;
