@@ -139,7 +139,7 @@ fn write_calendar(gtfs_path: &str) {
         ("School Monday, Tuesday, Thursday & Friday", "1", "1", "0", "1", "1", "0", "0", &start_date, &end_date),
         ("Tuesday", "0", "1", "0", "0", "0", "0", "0", &start_date, &end_date),
         ("Monday - Thursday", "1", "1", "1", "1", "0", "0", "0", &start_date, &end_date),
-        ("Saturday", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
+        ("Saturday", "0", "0", "0", "0", "0", "1", "0", &start_date, &end_date),
         ("Saturday and Sunday", "0", "0", "0", "0", "0", "1","1", &start_date, &end_date),
         ("Sunday", "0", "0", "0", "0", "0", "0", "1", &start_date, &end_date),
         ("School Tuesday", "0", "1", "0", "0", "0", "0", "0", &start_date, &end_date),
